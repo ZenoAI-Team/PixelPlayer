@@ -71,6 +71,37 @@ import kotlinx.coroutines.launch
 import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
 import kotlin.math.roundToInt
 
+// --- Data Models & Helpers ---
+
+private enum class SortOption { ARTIST, ALBUM, TITLE }
+
+sealed class SectionData {
+    abstract val id: String
+
+    data class ArtistSection(
+        override val id: String,
+        val artistName: String,
+        val albums: List<AlbumData>
+    ) : SectionData()
+
+    data class AlbumSection(
+        override val id: String,
+        val album: AlbumData
+    ) : SectionData()
+
+    data class FlatList(
+        val songs: List<Song>
+    ) : SectionData() {
+        override val id = "flat_list"
+    }
+}
+
+data class AlbumData(
+    val name: String,
+    val artUri: String?,
+    val songs: List<Song>
+)
+
 @androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -445,13 +476,8 @@ fun GenreCollapsibleTopBar(
     contentColor: Color,
     collapsedContentColor: Color
 ) {
-    val density = LocalDensity.current
-    
-    // Calculate alpha for the solid background layer based on collapse fraction
-    // It should become fully opaque as we approach the collapsed state
-    val solidAlpha = (collapseFraction * 2f).coerceIn(0f, 1f) // Becomes opaque halfway through collapse
-    
-    // Interpolate content color from Vibrant to Neutral
+    LocalDensity.current
+    val solidAlpha = (collapseFraction * 2f).coerceIn(0f, 1f)
     val animatedContentColor = androidx.compose.ui.graphics.lerp(
         start = contentColor,
         stop = collapsedContentColor,
@@ -464,22 +490,19 @@ fun GenreCollapsibleTopBar(
             .height(headerHeight)
             .zIndex(5f)
     ) {
-        // Layer 1: The solid background that fades in (Neutral Surface)
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(containerColor.copy(alpha = solidAlpha)) 
         )
-        
-        // Layer 2: The gradient (visible when expanded, fades out when collapsed to avoid double darkening?)
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            startColor.copy(alpha = 0.8f * (1f - solidAlpha)), // Fade out top slightly
-                            startColor.copy(alpha = 0f) // Keep bottom transparent
+                            startColor.copy(alpha = 0.8f * (1f - solidAlpha)),
+                            startColor.copy(alpha = 0f)
                         )
                     )
                 )
@@ -493,7 +516,7 @@ fun GenreCollapsibleTopBar(
                     .zIndex(10f),
                 onClick = onBackPressed,
                 colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = animatedContentColor.copy(alpha = 0.1f), // Tonal style 
+                    containerColor = animatedContentColor.copy(alpha = 0.1f),
                     contentColor = animatedContentColor
                 )
             ) {
@@ -513,38 +536,7 @@ fun GenreCollapsibleTopBar(
     }
 }
 
-// --- Data Models & Helpers ---
 
-enum class SortOption { ARTIST, ALBUM, TITLE }
-
-sealed class SectionData {
-    abstract val id: String
-    
-    data class ArtistSection(
-        override val id: String,
-        val artistName: String,
-        val albums: List<AlbumData>
-    ) : SectionData()
-
-    data class AlbumSection(
-        override val id: String,
-        val album: AlbumData
-    ) : SectionData()
-    
-    data class FlatList(
-        val songs: List<Song>
-    ) : SectionData() {
-        override val id = "flat_list"
-    }
-}
-
-data class AlbumData(
-    val name: String,
-    val artUri: String?,
-    val songs: List<Song>
-)
-
-// Helper functions (simplified from original to match strictly the needed logic)
 private fun buildSectionsByArtist(songs: List<Song>): List<SectionData> {
     val grouped = songs.groupBy { it.artist ?: "Unknown Artist" }
     return grouped.map { (artist, artistSongs) ->
@@ -575,9 +567,6 @@ fun LazyListScope.ArtistSection(
     onMoreOptionsClick: (Song) -> Unit
 ) {
     val artistImage = artists.find { it.name.equals(section.artistName, ignoreCase = true) }?.imageUrl
-    val containerColor = Color(0xFF2B2930).copy(alpha = 0.5f) // MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha=0.5f) - Hardcoded for now or access via @Composable context if possible?
-    // We can't access MaterialTheme.colorScheme inside LazyListScope unless we use a Composable item wrapper.
-    // We can just use the item { } block to access Composable scope.
 
     // 1. Artist Header
     item(key = "header_${section.id}") {
@@ -672,7 +661,7 @@ fun LazyListScope.ArtistSection(
 fun LazyListScope.AlbumSection(
     section: SectionData.AlbumSection,
     onSongClick: (Song) -> Unit,
-    stablePlayerState: com.theveloper.pixelplay.presentation.viewmodel.StablePlayerState,
+    stablePlayerState: StablePlayerState,
     onMoreOptionsClick: (Song) -> Unit
 ) {
     AlbumSectionItems(
@@ -681,27 +670,18 @@ fun LazyListScope.AlbumSection(
         stablePlayerState = stablePlayerState,
         onMoreOptionsClick = onMoreOptionsClick,
         isLastAlbumInSection = true,
-        useArtistStyle = false // Standalone album
+        useArtistStyle = false
     )
 }
 
-// Logic shared between Artist-embedded albums and Standalone albums
 fun LazyListScope.AlbumSectionItems(
     album: AlbumData,
     onSongClick: (Song) -> Unit,
-    stablePlayerState: com.theveloper.pixelplay.presentation.viewmodel.StablePlayerState,
+    stablePlayerState: StablePlayerState,
     onMoreOptionsClick: (Song) -> Unit,
     isLastAlbumInSection: Boolean,
     useArtistStyle: Boolean
 ) {
-    // Background handling:
-    // If useArtistStyle == true, we are inside the Artist Card, so we need to continue the surfaceContainerLow background behavior.
-    // If usageArtistStyle == false, we are a standalone Card, so we need to start/end the card shape ourselves.
-    
-    // Header Shape
-    // ArtistStyle: Rect (middle of card)
-    // Standalone: TopRounded (start of card)
-    
     item(key = "album_header_${album.name}") {
         val containerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.5f)
         val shape = if (useArtistStyle) {
