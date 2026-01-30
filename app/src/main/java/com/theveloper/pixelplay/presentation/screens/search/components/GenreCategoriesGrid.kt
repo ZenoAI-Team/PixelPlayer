@@ -1,16 +1,14 @@
 package com.theveloper.pixelplay.presentation.screens.search.components
 
-import android.util.Log
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -18,39 +16,28 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import androidx.media3.common.util.UnstableApi
-import com.theveloper.pixelplay.R
 import com.theveloper.pixelplay.data.model.Genre
 import com.theveloper.pixelplay.presentation.components.MiniPlayerHeight
 import com.theveloper.pixelplay.presentation.components.NavBarContentHeight
 import com.theveloper.pixelplay.presentation.components.SmartImage
 import com.theveloper.pixelplay.presentation.components.getNavigationBarHeight
+import com.theveloper.pixelplay.presentation.utils.GenreIconProvider
 import com.theveloper.pixelplay.presentation.viewmodel.PlayerViewModel
 import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
 
@@ -162,12 +149,12 @@ private fun GenreCard(
             // Imagen del género en esquina inferior derecha
             Box(
                 modifier = Modifier
-                    .size(108.dp)
+                    .size(90.dp) // Reduced size from 108.dp
                     .align(Alignment.BottomEnd)
-                    .offset(x = 20.dp, y = 20.dp)
+                    .offset(x = 16.dp, y = 16.dp) // Adjusted offset
             ) {
                 SmartImage(
-                    model = getGenreImageResource(genre.id), // Use genre.id for image resource
+                    model = GenreIconProvider.getGenreImageResource(genre.id), // Use genre.id for image resource
                     contentDescription = "Genre illustration",
                     modifier = Modifier
                         .fillMaxSize()
@@ -180,45 +167,19 @@ private fun GenreCard(
             // Nombre del género en esquina superior izquierda
             Text(
                 text = genre.name,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
+                style = GenreTypography.getGenreStyle(genre.id).copy(
+                    lineHeight = 24.sp // Enforce comfortable line height
                 ),
                 color = onBackgroundColor,
+                softWrap = true,
+                minLines = 1,
+                maxLines = 3, // Allow up to 3 lines for very long names/large fonts
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(16.dp)
+                    .fillMaxWidth(0.7f) // Give slightly more room (70%)
+                    .padding(start = 14.dp, top = 14.dp, end = 0.dp) // Removed Right padding effectively by limiting width
             )
         }
-    }
-}
-
-
-
-private fun getGenreImageResource(genreId: String): Any {
-    return when (genreId.lowercase()) {
-        "rock" -> R.drawable.rock
-        "pop" -> R.drawable.pop_mic
-        "jazz" -> R.drawable.sax
-        "classical" -> R.drawable.clasic_piano
-        "electronic" -> R.drawable.electronic_sound
-        "hip hop", "hip-hop", "rap" -> R.drawable.rapper
-        "country" -> R.drawable.banjo
-        "blues" -> R.drawable.harmonica
-        "reggae" -> R.drawable.maracas
-        "metal" -> R.drawable.metal_guitar
-        "folk" -> R.drawable.accordion
-        "r&b / soul", "rnb" -> R.drawable.synth_piano
-        "punk" -> R.drawable.punk
-        "indie" -> R.drawable.idk_indie_ig
-        "folk & acoustic" -> R.drawable.acoustic_guitar
-        "alternative" -> R.drawable.alt_video
-        "latino", "latin" -> R.drawable.star_angle
-        "reggaeton" -> R.drawable.rapper
-        "salsa" -> R.drawable.conga
-        "bachata" -> R.drawable.bongos
-        "merengue" -> R.drawable.drum
-        "unknown" -> R.drawable.rounded_question_mark_24 // Add icon for unknown genre
-        else -> R.drawable.genre_default
     }
 }

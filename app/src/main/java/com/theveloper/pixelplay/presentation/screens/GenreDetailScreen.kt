@@ -57,6 +57,7 @@ import com.theveloper.pixelplay.presentation.components.MiniPlayerHeight
 import com.theveloper.pixelplay.presentation.components.SmartImage
 import com.theveloper.pixelplay.presentation.components.SongInfoBottomSheet
 import com.theveloper.pixelplay.presentation.components.subcomps.EnhancedSongListItem
+import com.theveloper.pixelplay.presentation.screens.QuickFillDialog
 import com.theveloper.pixelplay.presentation.viewmodel.GenreDetailViewModel
 import com.theveloper.pixelplay.presentation.viewmodel.GroupedSongListItem
 import com.theveloper.pixelplay.presentation.viewmodel.PlayerSheetState
@@ -73,7 +74,7 @@ import kotlin.math.roundToInt
 
 // --- Data Models & Helpers ---
 
-private enum class SortOption { ARTIST, ALBUM, TITLE }
+enum class SortOption { ARTIST, ALBUM, TITLE }
 
 sealed class SectionData {
     abstract val id: String
@@ -217,7 +218,13 @@ fun GenreDetailScreen(
     var sortOption by remember { mutableStateOf(SortOption.ARTIST) }
     var showSongOptionsSheet by remember { mutableStateOf<Song?>(null) }
     var showPlaylistBottomSheet by remember { mutableStateOf(false) }
+    var showQuickFillDialog by remember { mutableStateOf(false) }
+
+    val isUnknownGenre = remember(decodedGenreId) {
+        decodedGenreId.equals("unknown", ignoreCase = true) || decodedGenreId.equals("unknown genre", ignoreCase = true)
+    }
     
+    val customGenres by playerViewModel.customGenres.collectAsState()
     val isMiniPlayerVisible = stablePlayerState.currentSong != null
     val fabBottomPadding by animateDpAsState(
         targetValue = if (isMiniPlayerVisible) MiniPlayerHeight + 16.dp else 16.dp, 
@@ -375,7 +382,7 @@ fun GenreDetailScreen(
                 }
             }
         
-            // Sorting Bottom Sheet
+            // Sorting/Options Bottom Sheet
             if (showSortSheet) {
                 GenreSortBottomSheet(
                     onDismiss = { showSortSheet = false },
@@ -389,9 +396,47 @@ fun GenreDetailScreen(
                             playerViewModel.showAndPlaySong(uiState.songs.random(), uiState.songs, uiState.genre?.name ?: "Genre Shuffle")
                             showSortSheet = false
                         }
-                    }
+                    },
+                    headerContent = if (isUnknownGenre) {
+                        {
+                            Button(
+                                onClick = {
+                                    showSortSheet = false
+                                    showQuickFillDialog = true
+                                },
+                                modifier = Modifier.fillMaxWidth().height(56.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                ),
+                                shape = racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape(16.dp, 60)
+                            ) {
+                                Icon(Icons.Rounded.AutoFixHigh, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Quick Fill Genre",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    } else null
                 )
             }
+
+            // Quick Fill Dialog
+            QuickFillDialog(
+                visible = showQuickFillDialog,
+                songs = uiState.songs,
+                customGenres = customGenres,
+                onDismiss = { showQuickFillDialog = false },
+                onApply = { songs, genre ->
+                    playerViewModel.batchEditGenre(songs, genre)
+                },
+                onAddCustomGenre = { genre ->
+                    playerViewModel.addCustomGenre(genre)
+                }
+            )
         
             // Song Options Bottom Sheet
             showSongOptionsSheet?.let { song ->
