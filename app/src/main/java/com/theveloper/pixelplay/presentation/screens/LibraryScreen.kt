@@ -180,8 +180,6 @@ import android.widget.Toast
 import com.theveloper.pixelplay.data.model.PlaylistShapeType
 import kotlinx.coroutines.flow.first
 import androidx.paging.compose.collectAsLazyPagingItems
-import androidx.paging.compose.itemContentType
-import androidx.paging.compose.itemKey
 import androidx.paging.LoadState
 import com.theveloper.pixelplay.presentation.components.ExpressiveScrollBar
 
@@ -201,6 +199,7 @@ fun LibraryScreen(
     val context = LocalContext.current // Added context
     val lastTabIndex by playerViewModel.lastLibraryTabIndexFlow.collectAsState()
     val favoriteIds by playerViewModel.favoriteSongIds.collectAsState() // Reintroducir favoriteIds aquí
+    val allSongs by playerViewModel.allSongsFlow.collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope() // Mantener si se usa para acciones de UI
     val syncManager = playerViewModel.syncManager
     var isRefreshing by remember { mutableStateOf(false) }
@@ -595,15 +594,13 @@ fun LibraryScreen(
                         ) { page ->
                             when (tabTitles.getOrNull(page)?.toLibraryTabIdOrNull()) {
                                 LibraryTabId.SONGS -> {
-                                    // Use sorted allSongs from LibraryStateHolder
-                                    val playerUiState by playerViewModel.playerUiState.collectAsState()
-                                    val allSongs = playerUiState.allSongs
-                                    val isLoading = playerUiState.isLoadingInitialSongs
+                                    val paginatedSongs = playerViewModel.paginatedSongs.collectAsLazyPagingItems()
                                     val stablePlayerState by playerViewModel.stablePlayerState.collectAsState()
-                                    
-                                    LibrarySongsTab(
-                                        songs = allSongs,
-                                        isLoading = isLoading,
+
+                                    LibrarySongsTabPaginated(
+                                        paginatedSongs = paginatedSongs,
+                                        totalSongsCount = allSongs.size,
+                                        syncProgress = syncProgress,
                                         stablePlayerState = stablePlayerState,
                                         playerViewModel = playerViewModel,
                                         bottomBarHeight = bottomBarHeightDp,
@@ -833,9 +830,6 @@ fun LibraryScreen(
             }
         }
     }
-
-    val allSongs by playerViewModel.allSongsFlow.collectAsState(initial = emptyList())
-
 
     CreatePlaylistDialog(
         visible = showCreatePlaylistDialog,
@@ -1871,6 +1865,8 @@ fun LibrarySongsTab(
 @Composable
 fun LibrarySongsTabPaginated(
     paginatedSongs: androidx.paging.compose.LazyPagingItems<Song>,
+    totalSongsCount: Int,
+    syncProgress: SyncProgress,
     stablePlayerState: StablePlayerState,
     playerViewModel: PlayerViewModel,
     bottomBarHeight: Dp,
@@ -1994,11 +1990,27 @@ fun LibrarySongsTabPaginated(
                             contentPadding = PaddingValues(bottom = bottomBarHeight + MiniPlayerHeight + 30.dp)
                         ) {
                             item(key = "songs_top_spacer") { Spacer(Modifier.height(0.dp)) }
+
+                            if (isRefreshing || syncProgress.isRunning) {
+                                item(key = "library_sync_progress") {
+                                    val displayProgress = if (syncProgress.isRunning || syncProgress.isCompleted || !isRefreshing) {
+                                        syncProgress
+                                    } else {
+                                        syncProgress.copy(isRunning = true)
+                                    }
+                                    SyncProgressBar(
+                                        syncProgress = displayProgress,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
                             
                             items(
                                 count = paginatedSongs.itemCount,
-                                key = paginatedSongs.itemKey { "song_${it.id}" },
-                                contentType = paginatedSongs.itemContentType { "song" }
+                                key = { index -> paginatedSongs.peek(index)?.id ?: "song_placeholder_$index" },
+                                contentType = { "song" }
                             ) { index ->
                                 val song = paginatedSongs[index]
                                 if (song != null) {
@@ -2055,6 +2067,7 @@ fun LibrarySongsTabPaginated(
                             modifier = Modifier
                                 .align(Alignment.CenterEnd)
                                 .padding(end = 4.dp, top = 16.dp, bottom = bottomPadding),
+                            totalItemsOverride = totalSongsCount,
                             listState = listState
                         )
                     }

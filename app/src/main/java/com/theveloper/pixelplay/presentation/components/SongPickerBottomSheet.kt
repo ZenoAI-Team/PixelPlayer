@@ -37,7 +37,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,6 +53,8 @@ import coil.size.Size
 import com.theveloper.pixelplay.data.model.Song
 import com.theveloper.pixelplay.ui.theme.GoogleSansRounded
 import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,13 +72,13 @@ fun SongPickerBottomSheet(
         }
     }
     var searchQuery by remember { mutableStateOf("") }
-    val filteredSongs = remember(searchQuery, allSongs) {
-        if (searchQuery.isBlank()) allSongs
-        else allSongs.filter {
-            it.title.contains(searchQuery, true) || it.artist.contains(
-                searchQuery,
-                true
-            )
+    val latestQuery by rememberUpdatedState(searchQuery)
+    val filteredSongs by produceState(initialValue = allSongs, searchQuery, allSongs) {
+        value = withContext(Dispatchers.Default) {
+            if (latestQuery.isBlank()) allSongs
+            else allSongs.filter {
+                it.title.contains(latestQuery, true) || it.artist.contains(latestQuery, true)
+            }
         }
     }
 

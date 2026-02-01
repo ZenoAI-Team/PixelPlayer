@@ -65,6 +65,7 @@ import com.theveloper.pixelplay.presentation.viewmodel.StablePlayerState
 import com.theveloper.pixelplay.ui.theme.LocalPixelPlayDarkTheme
 import com.theveloper.pixelplay.utils.formatDuration
 import com.theveloper.pixelplay.utils.hexToColor
+import com.theveloper.pixelplay.presentation.components.GenreSortOption
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -72,8 +73,6 @@ import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
 import kotlin.math.roundToInt
 
 // --- Data Models & Helpers ---
-
-private enum class SortOption { ARTIST, ALBUM, TITLE }
 
 sealed class SectionData {
     abstract val id: String
@@ -214,7 +213,7 @@ fun GenreDetailScreen(
     
     // FAB Logic
     var showSortSheet by remember { mutableStateOf(false) }
-    var sortOption by remember { mutableStateOf(SortOption.ARTIST) }
+    var sortOption by remember { mutableStateOf(GenreSortOption.ARTIST) }
     var showSongOptionsSheet by remember { mutableStateOf<Song?>(null) }
     var showPlaylistBottomSheet by remember { mutableStateOf(false) }
     
@@ -226,16 +225,16 @@ fun GenreDetailScreen(
 
     val sortedSongs = remember(uiState.songs, sortOption) {
         when (sortOption) {
-            SortOption.ARTIST -> uiState.songs.sortedBy { it.artist }
-            SortOption.ALBUM -> uiState.songs.sortedBy { it.album }
-            SortOption.TITLE -> uiState.songs.sortedBy { it.title }
+            GenreSortOption.ARTIST -> uiState.songs.sortedBy { it.artist }
+            GenreSortOption.ALBUM -> uiState.songs.sortedBy { it.album }
+            GenreSortOption.TITLE -> uiState.songs.sortedBy { it.title }
         }
     }
     
     val displaySections = remember(sortedSongs, sortOption) {
-        if (sortOption == SortOption.ARTIST) {
+        if (sortOption == GenreSortOption.ARTIST) {
             buildSectionsByArtist(sortedSongs)
-        } else if (sortOption == SortOption.ALBUM) {
+        } else if (sortOption == GenreSortOption.ALBUM) {
              buildSectionsByAlbum(sortedSongs)
         } else {
             listOf(SectionData.FlatList(sortedSongs))

@@ -69,6 +69,7 @@ import androidx.compose.ui.unit.dp
 import com.theveloper.pixelplay.R
 import com.theveloper.pixelplay.data.worker.SyncProgress
 import com.theveloper.pixelplay.presentation.viewmodel.LyricsRefreshProgress
+import com.theveloper.pixelplay.presentation.components.SyncProgressBar
 import com.theveloper.pixelplay.ui.theme.GoogleSansRounded
 import androidx.compose.ui.res.vectorResource
 
@@ -460,27 +461,12 @@ fun RefreshLibraryItem(
 
             if (isSyncing) {
                 Spacer(modifier = Modifier.height(12.dp))
-                if (syncProgress.hasProgress) {
-                    LinearProgressIndicator(
-                            progress = { syncProgress.progress },
-                            modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                            text =
-                                    "Scanned ${syncProgress.currentCount} of ${syncProgress.totalCount} songs",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                val displayProgress = if (syncProgress.isRunning || syncProgress.isCompleted) {
+                    syncProgress
                 } else {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                            text = "Refreshing library…",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    syncProgress.copy(isRunning = true)
                 }
+                SyncProgressBar(syncProgress = displayProgress)
             }
         }
     }

@@ -34,15 +34,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.theveloper.pixelplay.presentation.screens.SortOption
 import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
+
+enum class GenreSortOption { ARTIST, ALBUM, TITLE }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GenreSortBottomSheet(
     onDismiss: () -> Unit,
-    currentSort: SortOption,
-    onSortSelected: (SortOption) -> Unit,
+    currentSort: GenreSortOption,
+    onSortSelected: (GenreSortOption) -> Unit,
     onShuffle: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(
@@ -115,20 +116,20 @@ fun GenreSortBottomSheet(
                 SortOptionCard(
                     text = "Artist",
                     icon = Icons.Rounded.Person,
-                    isSelected = currentSort == SortOption.ARTIST,
-                    onClick = { onSortSelected(SortOption.ARTIST) }
+                    isSelected = currentSort == GenreSortOption.ARTIST,
+                    onClick = { onSortSelected(GenreSortOption.ARTIST) }
                 )
                 SortOptionCard(
                     text = "Album",
                     icon = Icons.Rounded.Album,
-                    isSelected = currentSort == SortOption.ALBUM,
-                    onClick = { onSortSelected(SortOption.ALBUM) }
+                    isSelected = currentSort == GenreSortOption.ALBUM,
+                    onClick = { onSortSelected(GenreSortOption.ALBUM) }
                 )
                 SortOptionCard(
                     text = "Title",
                     icon = Icons.Rounded.SortByAlpha,
-                    isSelected = currentSort == SortOption.TITLE,
-                    onClick = { onSortSelected(SortOption.TITLE) }
+                    isSelected = currentSort == GenreSortOption.TITLE,
+                    onClick = { onSortSelected(GenreSortOption.TITLE) }
                 )
             }
         }

@@ -31,6 +31,8 @@ import androidx.media3.session.SessionResult
 import androidx.media3.session.SessionToken
 import androidx.mediarouter.media.MediaControlIntent
 import androidx.mediarouter.media.MediaRouter
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.google.android.gms.cast.framework.SessionManager
 import com.google.android.gms.cast.CastMediaControlIntent
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -140,7 +142,10 @@ class PlayerViewModel @Inject constructor(
     val playerUiState: StateFlow<PlayerUiState> = _playerUiState.asStateFlow()
     
     val stablePlayerState: StateFlow<StablePlayerState> = playbackStateHolder.stablePlayerState
-    
+    val paginatedSongs: Flow<PagingData<Song>> = musicRepository
+        .getPaginatedSongs()
+        .cachedIn(viewModelScope)
+
     private val _masterAllSongs = MutableStateFlow<ImmutableList<Song>>(persistentListOf())
 
     // Lyrics load callback for LyricsStateHolder
@@ -904,7 +909,7 @@ class PlayerViewModel @Inject constructor(
         // Collect LibraryStateHolder flows to sync with UI State
         viewModelScope.launch {
             libraryStateHolder.allSongs.collect { songs ->
-                _playerUiState.update { it.copy(allSongs = songs, songCount = songs.size) }
+                _playerUiState.update { it.copy(songCount = songs.size) }
                 // Update master songs for Cast usage if needed
                 _masterAllSongs.value = songs
             }

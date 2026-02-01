@@ -50,6 +50,22 @@ class MediaStoreSongRepository @Inject constructor(
 
     private fun normalizePath(path: String): String = File(path).absolutePath
 
+    private suspend fun getCachedGenreMap(): Map<Long, String> = withContext(Dispatchers.IO) {
+        val now = System.currentTimeMillis()
+        if (cachedGenreMap.isNotEmpty() && now - genreCacheTimestamp < genreCacheTtlMs) {
+            return@withContext cachedGenreMap
+        }
+
+        val fresh = getSongIdToGenreMap(context.contentResolver)
+        cachedGenreMap = fresh
+        genreCacheTimestamp = now
+        fresh
+    }
+
+    private var cachedGenreMap: Map<Long, String> = emptyMap()
+    private var genreCacheTimestamp: Long = 0L
+    private val genreCacheTtlMs = 60 * 60 * 1000L
+
     private fun getExcludedPaths(): Set<String> {
         // This should come from a repository/store, not blocking flow preferably, 
         // but for query implementation we'll need to filter the cursor results.
@@ -90,13 +106,12 @@ class MediaStoreSongRepository @Inject constructor(
             // Genre is difficult in MediaStore.Audio.Media, usually requires separate query.
             // keeping it simple for now, maybe null or fetch separately.
         )
-        
+
         // Handling API version differences for columns if necessary
         // Assuming minSdk is high enough or columns exist (ALBUM_ARTIST is API 30+, need check if app supports lower)
-        
-        val selection = getBaseSelection()
+        val songIdToGenreMap = getCachedGenreMap()
 
-        val songIdToGenreMap = getSongIdToGenreMap(context.contentResolver)
+        val selection = getBaseSelection()
 
         try {
             context.contentResolver.query(
@@ -260,12 +275,12 @@ class MediaStoreSongRepository @Inject constructor(
             Triple(allowedDirs, blockedDirs, Unit)
         }.flatMapLatest { (allowedDirs, blockedDirs, _) ->
              val musicIds = getFilteredSongIds(allowedDirs.toList(), blockedDirs.toList())
-             val genreMap = getSongIdToGenreMap(context.contentResolver) // Potentially expensive, optimize if needed
+             val genreMap = getCachedGenreMap()
              
              androidx.paging.Pager(
                  config = androidx.paging.PagingConfig(
                      pageSize = 50,
-                     enablePlaceholders = true,
+                     enablePlaceholders = false,
                      initialLoadSize = 50
                  ),
                  pagingSourceFactory = {

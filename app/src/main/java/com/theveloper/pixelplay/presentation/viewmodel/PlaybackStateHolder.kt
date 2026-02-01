@@ -23,6 +23,7 @@ import timber.log.Timber
 import com.theveloper.pixelplay.utils.QueueUtils
 import com.theveloper.pixelplay.utils.MediaItemBuilder
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.isActive
 
 @Singleton
 class PlaybackStateHolder @Inject constructor(
@@ -185,13 +186,15 @@ class PlaybackStateHolder @Inject constructor(
     fun startProgressUpdates() {
         stopProgressUpdates()
         progressJob = scope?.launch {
-            while (true) {
+            while (isActive) {
                 val castSession = castStateHolder.castSession.value
                 val isRemote = castSession?.remoteMediaClient != null
+                var isPlaying = false
                 
                 if (isRemote) {
                     val remoteClient = castSession?.remoteMediaClient
                     if (remoteClient != null && remoteClient.isPlaying) {
+                        isPlaying = true
                         val currentPosition = remoteClient.approximateStreamPosition
                         val duration = remoteClient.streamDuration
                         _stablePlayerState.update {
@@ -202,17 +205,19 @@ class PlaybackStateHolder @Inject constructor(
                      val controller = mediaController
                      // Media3: Check isPlaying or playbackState == READY/BUFFERING
                      if (controller != null && controller.isPlaying && !isSeeking) {
-                         val currentPosition = controller.currentPosition
-                         val duration = controller.duration
-                         
-                         listeningStatsTracker.onProgress(currentPosition, true)
-                         
-                         _stablePlayerState.update {
-                             it.copy(currentPosition = currentPosition, totalDuration = duration)
-                        }
+                          isPlaying = true
+                          val currentPosition = controller.currentPosition
+                          val duration = controller.duration
+                          
+                          listeningStatsTracker.onProgress(currentPosition, true)
+                          
+                          _stablePlayerState.update {
+                              it.copy(currentPosition = currentPosition, totalDuration = duration)
+                         }
                      }
                 }
-                delay(500) // 500ms ticker
+                val interval = if (isPlaying) 500L else 1000L
+                delay(interval)
             }
         }
     }

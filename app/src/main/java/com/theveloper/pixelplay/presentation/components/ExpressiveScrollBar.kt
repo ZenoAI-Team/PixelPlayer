@@ -37,6 +37,7 @@ fun ExpressiveScrollBar(
     modifier: Modifier = Modifier,
     listState: LazyListState? = null,
     gridState: LazyGridState? = null,
+    totalItemsOverride: Int? = null,
     minHeight: Dp = 48.dp,
     thickness: Dp = 8.dp,
     indicatorExpandedWidth: Dp = 24.dp,
@@ -99,38 +100,44 @@ fun ExpressiveScrollBar(
                 return Triple(0f, 0, 1f)
             }
 
-            if (totalItemsCount == 0) return Triple(0f, 0, 1f)
+            val resolvedTotal = totalItemsOverride
+                ?.takeIf { it > 0 }
+                ?.coerceAtLeast(totalItemsCount)
+                ?: totalItemsCount
 
-            val maxScrollIndex = (totalItemsCount - visibleCount).coerceAtLeast(1)
-            
-            val forward = listState?.canScrollForward ?: gridState?.canScrollForward ?: false
-            val backward = listState?.canScrollBackward ?: gridState?.canScrollBackward ?: false
-            
-            val realProgress = if (!forward && totalItemsCount > 0) 1f
-            else if (!backward) 0f
-            else (firstVisibleItemIndex.toFloat() / maxScrollIndex.toFloat()).coerceIn(0f, 0.99f)
+            if (resolvedTotal == 0) return Triple(0f, 0, 1f)
+
+            val maxScrollIndex = (resolvedTotal - visibleCount).coerceAtLeast(1)
+            val realProgress = (firstVisibleItemIndex.toFloat() / maxScrollIndex.toFloat()).coerceIn(0f, 1f)
 
             val availableHeight = with(density) { constraintsMaxHeight.toPx() }
             val handleHeightPx = with(density) { minHeight.toPx() }
             val scrollableHeight = (availableHeight - handleHeightPx).coerceAtLeast(1f)
 
-            return Triple(realProgress, totalItemsCount, scrollableHeight)
+            return Triple(realProgress, resolvedTotal, scrollableHeight)
         }
 
         fun updateProgressFromTouch(touchY: Float, grabOffset: Float) {
             val stats = getScrollStats()
             val scrollableHeight = stats.third
             val totalItemsCount = stats.second
-            
+
             val targetHandleTop = touchY - grabOffset
             val newProgress = (targetHandleTop / scrollableHeight).coerceIn(0f, 1f)
-            
+
             dragProgress = newProgress
             val targetIndex = (newProgress * totalItemsCount).toInt()
-            
+
+            val actualTotalCount = listState?.layoutInfo?.totalItemsCount
+                ?: gridState?.layoutInfo?.totalItemsCount
+                ?: totalItemsCount
+            if (actualTotalCount <= 0) return
+
+            val safeIndex = targetIndex.coerceIn(0, (actualTotalCount - 1).coerceAtLeast(0))
+
             coroutineScope.launch {
-                listState?.scrollToItem(targetIndex)
-                gridState?.scrollToItem(targetIndex)
+                listState?.scrollToItem(safeIndex)
+                gridState?.scrollToItem(safeIndex)
             }
         }
 

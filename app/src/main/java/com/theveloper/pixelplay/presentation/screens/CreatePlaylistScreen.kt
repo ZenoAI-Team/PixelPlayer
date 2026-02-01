@@ -82,7 +82,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -135,6 +137,8 @@ import androidx.compose.material3.SliderDefaults
 
 
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
 
 import androidx.compose.ui.graphics.graphicsLayer
@@ -457,11 +461,14 @@ private fun CreatePlaylistContent(
                      onStarScaleChange = { starScale = it }
                  )
             } else {
-                 val filteredSongs = remember(searchQuery, allSongs) {
-                      if (searchQuery.isBlank()) allSongs 
-                      else allSongs.filter { 
-                          it.title.contains(searchQuery, ignoreCase = true) || 
-                          it.artist.contains(searchQuery, ignoreCase = true) 
+                 val latestQuery by rememberUpdatedState(searchQuery)
+                 val filteredSongs by produceState(initialValue = allSongs, searchQuery, allSongs) {
+                      value = withContext(Dispatchers.Default) {
+                          if (latestQuery.isBlank()) allSongs
+                          else allSongs.filter {
+                              it.title.contains(latestQuery, ignoreCase = true) ||
+                              it.artist.contains(latestQuery, ignoreCase = true)
+                          }
                       }
                  }
 
