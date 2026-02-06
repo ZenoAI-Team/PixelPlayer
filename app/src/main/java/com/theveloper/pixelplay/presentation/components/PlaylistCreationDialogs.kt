@@ -148,6 +148,7 @@ fun PlaylistCreationTypeDialog(
                 ) {
                     Text(
                         text = "Create playlist",
+                        color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.headlineSmall.copy(
                             fontFamily = GoogleSansRounded,
                             fontWeight = FontWeight.Bold
@@ -156,7 +157,7 @@ fun PlaylistCreationTypeDialog(
                     Text(
                         text = "Choose the creation flow.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
                     )
                 }
 

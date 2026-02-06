@@ -695,7 +695,9 @@ fun LibraryScreen(
                                 )
                             } else {
                                 LibraryActionRow(
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(end = 4.dp),
                                     onMainActionClick = {
                                         when (tabTitles.getOrNull(currentTabIndex)?.toLibraryTabIdOrNull()) {
                                             LibraryTabId.PLAYLISTS -> showPlaylistCreationTypeDialog = true

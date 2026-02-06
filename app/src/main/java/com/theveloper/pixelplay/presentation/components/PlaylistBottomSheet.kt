@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.media3.common.util.UnstableApi
 import com.theveloper.pixelplay.data.model.Song
 import com.theveloper.pixelplay.presentation.components.subcomps.LibraryActionRow
 import com.theveloper.pixelplay.presentation.viewmodel.PlayerViewModel
@@ -45,6 +46,7 @@ import com.theveloper.pixelplay.presentation.viewmodel.PlaylistUiState
 import com.theveloper.pixelplay.presentation.viewmodel.PlaylistViewModel
 import com.theveloper.pixelplay.ui.theme.GoogleSansRounded
 
+@androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PlaylistBottomSheet(
