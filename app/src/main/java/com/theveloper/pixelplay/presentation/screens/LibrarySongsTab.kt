@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import com.theveloper.pixelplay.R
 import com.theveloper.pixelplay.data.model.Song
+import com.theveloper.pixelplay.data.model.SortOption
 import com.theveloper.pixelplay.presentation.components.MiniPlayerHeight
 import com.theveloper.pixelplay.presentation.viewmodel.PlayerViewModel
 import com.theveloper.pixelplay.presentation.viewmodel.StablePlayerState
@@ -68,6 +69,7 @@ fun LibrarySongsTab(
     onMoreOptionsClick: (Song) -> Unit,
     isRefreshing: Boolean,
     onRefresh: () -> Unit,
+    sortOption: SortOption, // Added sortOption parameter
     // Multi-selection parameters
     isSelectionMode: Boolean = false,
     selectedSongIds: Set<String> = emptySet(),
@@ -112,6 +114,11 @@ fun LibrarySongsTab(
 
     LaunchedEffect(locateCurrentSongAction) {
         registerActionCallback(locateCurrentSongAction)
+    }
+
+    // Scroll to top when sort option changes
+    LaunchedEffect(sortOption) {
+        listState.scrollToItem(0)
     }
 
     LaunchedEffect(currentSongListIndex, songs, isLoading, listState) {

@@ -879,7 +879,8 @@ fun LibraryScreen(
                                     // We can use libraryViewModel.isLoadingLibrary or similar if needed for global loading state
                                     val isLibraryLoading by libraryViewModel.isLoadingLibrary.collectAsState()
                                     val stablePlayerState by playerViewModel.stablePlayerState.collectAsState()
-                                    
+                                    val playerUiState by playerViewModel.playerUiState.collectAsState()
+
                                     LibrarySongsTab(
                                         songs = allSongsLazyPagingItems,
                                         isLoading = isLibraryLoading,
@@ -897,7 +898,8 @@ fun LibraryScreen(
                                         onSongLongPress = onSongLongPress,
                                         onSongSelectionToggle = onSongSelectionToggle,
                                         onLocateCurrentSongVisibilityChanged = { songsShowLocateButton = it },
-                                        onRegisterLocateCurrentSongAction = { songsLocateAction = it }
+                                        onRegisterLocateCurrentSongAction = { songsLocateAction = it },
+                                        sortOption = playerUiState.currentSongSortOption
                                     )
                                 }
                                 LibraryTabId.ALBUMS -> {
@@ -2460,6 +2462,15 @@ fun LibraryAlbumsTab(
     val playerUiState by playerViewModel.playerUiState.collectAsState()
     val isListView = playerUiState.isAlbumsListView
 
+    // Scroll to top when sort option changes
+    LaunchedEffect(playerUiState.currentAlbumSortOption) {
+        if (isListView) {
+            listState.scrollToItem(0)
+        } else {
+            gridState.scrollToItem(0)
+        }
+    }
+
     // Prefetching logic for LibraryAlbumsTab
     LaunchedEffect(albums, gridState, listState, isListView) {
         if (isListView) {
@@ -2855,6 +2866,13 @@ fun LibraryArtistsTab(
     onRefresh: () -> Unit
 ) {
     val listState = rememberLazyListState()
+    val playerUiState by playerViewModel.playerUiState.collectAsState()
+    
+    // Scroll to top when sort option changes
+    LaunchedEffect(playerUiState.currentArtistSortOption) {
+        listState.scrollToItem(0)
+    }
+
     if (isLoading && artists.isEmpty()) {
         // Show skeleton list during loading
         LazyColumn(
