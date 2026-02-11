@@ -3056,6 +3056,17 @@ class PlayerViewModel @Inject constructor(
                 )
             }
 
+            val hasCastSession = castStateHolder.castSession.value != null
+            val shouldDisconnectRemote = hasCastSession ||
+                    castStateHolder.isRemotePlaybackActive.value ||
+                    castStateHolder.isCastConnecting.value
+            if (shouldDisconnectRemote) {
+                if (hasCastSession) {
+                    castTransferStateHolder.skipNextTransferBack()
+                }
+                disconnect()
+            }
+
             // Stop playback and clear current player state
             mediaController?.stop() // This should also clear Media3's playlist
             mediaController?.clearMediaItems() // Ensure items are cleared
