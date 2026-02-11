@@ -1894,14 +1894,14 @@ fun LibraryFoldersTab(
                                     top = 0.dp                            )
                             ) {
                                 if (showPlaylistCards) {
-                                    items(itemsToShow) { folder ->
+                                    items(itemsToShow, key = { it.path }) { folder ->
                                         FolderPlaylistItem(
                                             folder = folder,
                                             onClick = { onFolderAsPlaylistClick(folder) }
                                         )
                                     }
                                 } else {
-                                    items(itemsToShow) { folder ->
+                                    items(itemsToShow, key = { it.path }) { folder ->
                                         FolderListItem(
                                             folder = folder,
                                             onClick = { onFolderClick(folder.path) }
@@ -1909,7 +1909,7 @@ fun LibraryFoldersTab(
                                     }
                                 }
 
-                                items(songsToShow) { song ->
+                                items(songsToShow, key = { it.id }) { song ->
                                     EnhancedSongListItem(
                                         song = song,
                                         isPlaying = stablePlayerState.currentSong?.id == song.id && stablePlayerState.isPlaying,
@@ -2290,7 +2290,7 @@ fun LibrarySongsTabPaginated(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(bottom = bottomBarHeight + MiniPlayerHeight + ListExtraBottomGap)
             ) {
-                items(12) { // Show 12 skeleton items to fill the screen
+                items(12, key = { "skeleton_song_$it" }) { // Show 12 skeleton items to fill the screen
                     EnhancedSongListItem(
                         song = Song.emptySong(),
                         isPlaying = false,
@@ -2386,6 +2386,7 @@ fun LibrarySongsTabPaginated(
 
                             items(
                                 count = paginatedSongs.itemCount,
+                                key = { index -> paginatedSongs.peek(index)?.id ?: "paged_song_$index" },
                                 contentType = paginatedSongs.itemContentType { "song" }
                             ) { index ->
                                 val song = paginatedSongs[index]
@@ -2576,7 +2577,7 @@ fun LibraryAlbumsTab(
                 contentPadding = PaddingValues(bottom = bottomBarHeight + MiniPlayerHeight + ListExtraBottomGap + 4.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(8) {
+                items(8, key = { "skeleton_album_list_$it" }) {
                     AlbumListItem(
                         album = Album.empty(),
                         albumColorSchemePairFlow = MutableStateFlow(null),
@@ -2604,7 +2605,7 @@ fun LibraryAlbumsTab(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                items(8) { // Show 8 skeleton items (4 rows x 2 columns)
+                items(8, key = { "skeleton_album_grid_$it" }) { // Show 8 skeleton items (4 rows x 2 columns)
                     AlbumGridItemRedesigned(
                         album = Album.empty(),
                         albumColorSchemePairFlow = MutableStateFlow(null),
@@ -2915,7 +2916,7 @@ fun LibraryArtistsTab(
             contentPadding = PaddingValues(bottom = bottomBarHeight + MiniPlayerHeight + ListExtraBottomGap)
         ) {
             item(key = "skeleton_top_spacer") { Spacer(Modifier.height(4.dp)) }
-            items(10) { // Show 10 skeleton items
+            items(10, key = { "skeleton_artist_$it" }) { // Show 10 skeleton items
                 ArtistListItem(
                     artist = Artist.empty(),
                     onClick = {},

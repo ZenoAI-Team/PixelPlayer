@@ -196,7 +196,7 @@ fun LibrarySongsTab(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(bottom = bottomBarHeight + MiniPlayerHeight + ListExtraBottomGap)
             ) {
-                items(12) { // Show 12 skeleton items
+                items(12, key = { "skeleton_song_$it" }) { // Show 12 skeleton items
                     EnhancedSongListItem(
                         song = Song.emptySong(),
                         isPlaying = false,
