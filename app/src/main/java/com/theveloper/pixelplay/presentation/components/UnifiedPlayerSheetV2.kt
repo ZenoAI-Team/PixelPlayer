@@ -553,6 +553,7 @@ fun UnifiedPlayerSheetV2(
                             currentSheetContentState = currentSheetContentState,
                             carouselStyle = carouselStyle,
                             fullPlayerLoadingTweaks = fullPlayerLoadingTweaks,
+                            isSheetDragGestureActive = sheetBackAndDragState.isDraggingPlayerArea,
                             playerViewModel = playerViewModel,
                             currentPositionProvider = positionToDisplayProvider,
                             isFavorite = isFavorite,

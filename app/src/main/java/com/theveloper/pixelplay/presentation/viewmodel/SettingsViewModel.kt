@@ -67,7 +67,7 @@ data class SettingsUiState(
     val appRebrandDialogShown: Boolean = false,
     val fullPlayerLoadingTweaks: FullPlayerLoadingTweaks = FullPlayerLoadingTweaks(),
     val showPlayerFileInfo: Boolean = true,
-    val usePlayerSheetV2: Boolean = false,
+    val usePlayerSheetV2: Boolean = true,
     // Developer Options
     val albumArtQuality: AlbumArtQuality = AlbumArtQuality.MEDIUM,
     val tapBackgroundClosesPlayer: Boolean = true,
@@ -543,6 +543,12 @@ class SettingsViewModel @Inject constructor(
     fun setFullPlayerPlaceholdersOnClose(enabled: Boolean) {
         viewModelScope.launch {
             userPreferencesRepository.setFullPlayerPlaceholdersOnClose(enabled)
+        }
+    }
+
+    fun setFullPlayerSwitchOnDragRelease(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.setFullPlayerSwitchOnDragRelease(enabled)
         }
     }
 

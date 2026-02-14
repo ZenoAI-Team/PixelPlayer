@@ -142,7 +142,7 @@ internal fun rememberSheetVisualState(
         derivedStateOf {
             if (navBarStyle == NavBarStyle.FULL_WIDTH) {
                 val fraction = playerContentExpansionFraction.value
-                return@derivedStateOf lerp(32.dp, 26.dp, fraction)
+                return@derivedStateOf lerp(32.dp, 0.dp, fraction)
             }
 
             val calculatedNormally =
@@ -150,7 +150,7 @@ internal fun rememberSheetVisualState(
                     showPlayerContentArea &&
                     currentSheetContentState == PlayerSheetState.EXPANDED
                 ) {
-                    val expandedRadius = 26.dp
+                    val expandedRadius = 0.dp
                     val collapsedRadiusTarget = if (isNavBarHidden) 60.dp else 12.dp
                     lerp(expandedRadius, collapsedRadiusTarget, predictiveBackCollapseProgress)
                 } else {
@@ -160,7 +160,7 @@ internal fun rememberSheetVisualState(
                         if (fraction < 0.2f) {
                             lerp(collapsedRadius, 26.dp, (fraction / 0.2f).coerceIn(0f, 1f))
                         } else {
-                            26.dp
+                            lerp(26.dp, 0.dp, ((fraction - 0.2f) / 0.8f).coerceIn(0f, 1f))
                         }
                     } else {
                         if (!isPlaying || !hasCurrentSong) {

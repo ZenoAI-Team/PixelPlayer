@@ -135,6 +135,7 @@ fun FullPlayerContent(
     currentSheetState: PlayerSheetState,
     carouselStyle: String,
     loadingTweaks: FullPlayerLoadingTweaks,
+    isSheetDragGestureActive: Boolean = false,
     playerViewModel: PlayerViewModel, // For stable state like totalDuration and lyrics
     // State Providers
     currentPositionProvider: () -> Long,
@@ -334,6 +335,8 @@ fun FullPlayerContent(
                 shouldDelay = shouldDelay,
                 showPlaceholders = loadingTweaks.showPlaceholders,
                 applyPlaceholderDelayOnClose = loadingTweaks.applyPlaceholdersOnClose,
+                switchOnDragRelease = loadingTweaks.switchOnDragRelease,
+                isSheetDragGestureActive = isSheetDragGestureActive,
                 sharedBoundsModifier = Modifier.fillMaxWidth().height(carouselHeight),
                 expansionFractionProvider = expansionFractionProvider,
                 isExpandedOverride = currentSheetState == PlayerSheetState.EXPANDED,
@@ -398,6 +401,8 @@ fun FullPlayerContent(
             shouldDelay = shouldDelay,
             showPlaceholders = loadingTweaks.showPlaceholders,
             applyPlaceholderDelayOnClose = loadingTweaks.applyPlaceholdersOnClose,
+            switchOnDragRelease = loadingTweaks.switchOnDragRelease,
+            isSheetDragGestureActive = isSheetDragGestureActive,
             sharedBoundsModifier = Modifier.fillMaxWidth().height(182.dp),
             expansionFractionProvider = expansionFractionProvider,
             isExpandedOverride = currentSheetState == PlayerSheetState.EXPANDED,
@@ -475,6 +480,7 @@ fun FullPlayerContent(
             thumbColor = playerAccentColor,
             timeTextColor = playerOnBaseColor,
             allowRealtimeUpdates = allowRealtimeUpdates,
+            isSheetDragGestureActive = isSheetDragGestureActive,
             loadingTweaks = loadingTweaks
         )
     }
@@ -487,6 +493,8 @@ fun FullPlayerContent(
             shouldDelay = shouldDelay,
             showPlaceholders = loadingTweaks.showPlaceholders,
             applyPlaceholderDelayOnClose = loadingTweaks.applyPlaceholdersOnClose,
+            switchOnDragRelease = loadingTweaks.switchOnDragRelease,
+            isSheetDragGestureActive = isSheetDragGestureActive,
             sharedBoundsModifier = Modifier.fillMaxWidth().heightIn(min = 70.dp),
             expansionFractionProvider = expansionFractionProvider,
             isExpandedOverride = currentSheetState == PlayerSheetState.EXPANDED,
@@ -1116,6 +1124,7 @@ private fun PlayerProgressBarSection(
     thumbColor: Color,
     timeTextColor: Color,
     allowRealtimeUpdates: Boolean = true,
+    isSheetDragGestureActive: Boolean = false,
     loadingTweaks: FullPlayerLoadingTweaks? = null,
     modifier: Modifier = Modifier
 ) {
@@ -1235,6 +1244,8 @@ private fun PlayerProgressBarSection(
         shouldDelay = shouldDelay,
         showPlaceholders = loadingTweaks?.showPlaceholders ?: false,
         applyPlaceholderDelayOnClose = loadingTweaks?.applyPlaceholdersOnClose ?: true,
+        switchOnDragRelease = loadingTweaks?.switchOnDragRelease ?: false,
+        isSheetDragGestureActive = isSheetDragGestureActive,
         sharedBoundsModifier = Modifier.fillMaxWidth().heightIn(min = 70.dp),
         expansionFractionProvider = expansionFractionProvider,
         isExpandedOverride = currentSheetState == PlayerSheetState.EXPANDED,
@@ -1392,6 +1403,8 @@ private fun DelayedContent(
     shouldDelay: Boolean,
     showPlaceholders: Boolean,
     applyPlaceholderDelayOnClose: Boolean,
+    switchOnDragRelease: Boolean,
+    isSheetDragGestureActive: Boolean,
     sharedBoundsModifier: Modifier = Modifier,
     expansionFractionProvider: () -> Float,
     isExpandedOverride: Boolean = false,
@@ -1437,6 +1450,8 @@ private fun DelayedContent(
         closeThreshold,
         effectiveExpansionFraction,
         applyPlaceholderDelayOnClose,
+        switchOnDragRelease,
+        isSheetDragGestureActive,
         isCollapsing,
         isExpanding,
         isExpandedOverride,
@@ -1444,6 +1459,15 @@ private fun DelayedContent(
     ) {
         if (!shouldDelay) {
             isDelayGateOpen = true
+            return@LaunchedEffect
+        }
+
+        if (switchOnDragRelease) {
+            if (isSheetDragGestureActive) {
+                return@LaunchedEffect
+            }
+
+            isDelayGateOpen = isExpandedOverride
             return@LaunchedEffect
         }
 
