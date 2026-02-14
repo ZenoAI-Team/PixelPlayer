@@ -700,7 +700,7 @@ class MainActivity : ComponentActivity() {
                                 .map { it.currentSong?.id != null }
                                 .distinctUntilChanged()
                         }.collectAsState(initial = false)
-                        val usePlayerSheetV2 by userPreferencesRepository.usePlayerSheetV2Flow.collectAsState(initial = false)
+                        val usePlayerSheetV2 by userPreferencesRepository.usePlayerSheetV2Flow.collectAsState(initial = true)
 
                         val routesWithHiddenMiniPlayer = remember { setOf(Screen.NavBarCrRad.route) }
                         val shouldHideMiniPlayer by remember(currentRoute) {

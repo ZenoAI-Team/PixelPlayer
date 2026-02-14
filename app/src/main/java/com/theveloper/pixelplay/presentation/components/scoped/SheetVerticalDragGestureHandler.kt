@@ -133,6 +133,10 @@ internal class SheetVerticalDragGestureHandler(
 
         accumulatedDragYSinceStart = 0f
     }
+
+    fun onDragCancel() {
+        onDragEnd()
+    }
 }
 
 internal fun Modifier.playerSheetVerticalDragGesture(
@@ -151,7 +155,8 @@ internal fun Modifier.playerSheetVerticalDragGesture(
                     dragAmount = dragAmount
                 )
             },
-            onDragEnd = { handler.onDragEnd() }
+            onDragEnd = { handler.onDragEnd() },
+            onDragCancel = { handler.onDragCancel() }
         )
     }
 }

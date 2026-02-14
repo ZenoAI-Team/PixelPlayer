@@ -134,6 +134,7 @@ constructor(
         val FULL_PLAYER_PLACEHOLDERS = booleanPreferencesKey("full_player_placeholders")
         val FULL_PLAYER_PLACEHOLDER_TRANSPARENT = booleanPreferencesKey("full_player_placeholder_transparent")
         val FULL_PLAYER_PLACEHOLDERS_ON_CLOSE = booleanPreferencesKey("full_player_placeholders_on_close")
+        val FULL_PLAYER_SWITCH_ON_DRAG_RELEASE = booleanPreferencesKey("full_player_switch_on_drag_release")
         val FULL_PLAYER_DELAY_THRESHOLD = intPreferencesKey("full_player_delay_threshold_percent")
         val FULL_PLAYER_CLOSE_THRESHOLD = intPreferencesKey("full_player_close_threshold_percent")
         val USE_PLAYER_SHEET_V2 = booleanPreferencesKey("use_player_sheet_v2")
@@ -773,6 +774,7 @@ constructor(
                 showPlaceholders = preferences[PreferencesKeys.FULL_PLAYER_PLACEHOLDERS] ?: true,
                 transparentPlaceholders = preferences[PreferencesKeys.FULL_PLAYER_PLACEHOLDER_TRANSPARENT] ?: false,
                 applyPlaceholdersOnClose = preferences[PreferencesKeys.FULL_PLAYER_PLACEHOLDERS_ON_CLOSE] ?: false,
+                switchOnDragRelease = preferences[PreferencesKeys.FULL_PLAYER_SWITCH_ON_DRAG_RELEASE] ?: false,
                 contentAppearThresholdPercent = preferences[PreferencesKeys.FULL_PLAYER_DELAY_THRESHOLD] ?: 98,
                 contentCloseThresholdPercent = preferences[PreferencesKeys.FULL_PLAYER_CLOSE_THRESHOLD] ?: 0
             )
@@ -780,7 +782,7 @@ constructor(
 
     val usePlayerSheetV2Flow: Flow<Boolean> = dataStore.data
         .map { preferences ->
-            preferences[PreferencesKeys.USE_PLAYER_SHEET_V2] ?: false
+            preferences[PreferencesKeys.USE_PLAYER_SHEET_V2] ?: true
         }
 
     val favoriteSongIdsFlow: Flow<Set<String>> =
@@ -1436,6 +1438,12 @@ constructor(
     suspend fun setFullPlayerPlaceholdersOnClose(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.FULL_PLAYER_PLACEHOLDERS_ON_CLOSE] = enabled
+        }
+    }
+
+    suspend fun setFullPlayerSwitchOnDragRelease(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.FULL_PLAYER_SWITCH_ON_DRAG_RELEASE] = enabled
         }
     }
 

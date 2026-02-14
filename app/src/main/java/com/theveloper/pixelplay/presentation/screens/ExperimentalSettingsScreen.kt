@@ -199,6 +199,7 @@ fun ExperimentalSettingsScreen(
                             val delayAllEnabled = uiState.fullPlayerLoadingTweaks.delayAll
                             val appearThresholdPercent = uiState.fullPlayerLoadingTweaks.contentAppearThresholdPercent
                             val closeThresholdPercent = uiState.fullPlayerLoadingTweaks.contentCloseThresholdPercent
+                            val switchOnDragRelease = uiState.fullPlayerLoadingTweaks.switchOnDragRelease
                             val isAnyDelayEnabled = uiState.fullPlayerLoadingTweaks.let {
                                 it.delayAll || it.delayAlbumCarousel || it.delaySongMetadata || it.delayProgressBar || it.delayControls
                             }
@@ -332,7 +333,7 @@ fun ExperimentalSettingsScreen(
                                         onValueChange = { settingsViewModel.setFullPlayerAppearThreshold(it.roundToInt()) },
                                         valueRange = 0f..100f,
                                         steps = 99,
-                                        enabled = isAnyDelayEnabled
+                                        enabled = isAnyDelayEnabled && !switchOnDragRelease
                                     )
 
                                     Text(
@@ -384,7 +385,9 @@ fun ExperimentalSettingsScreen(
                                         onValueChange = { settingsViewModel.setFullPlayerCloseThreshold(it.roundToInt()) },
                                         valueRange = 0f..100f,
                                         steps = 99,
-                                        enabled = isAnyDelayEnabled && uiState.fullPlayerLoadingTweaks.applyPlaceholdersOnClose
+                                        enabled = isAnyDelayEnabled &&
+                                            uiState.fullPlayerLoadingTweaks.applyPlaceholdersOnClose &&
+                                            !switchOnDragRelease
                                     )
 
                                     Text(
@@ -418,6 +421,21 @@ fun ExperimentalSettingsScreen(
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Rounded.Rectangle,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.secondary
+                                    )
+                                }
+                            )
+
+                            SwitchSettingItem(
+                                title = "Switch on drag release",
+                                subtitle = "Ignore thresholds while dragging. Swap placeholders and content only after releasing the sheet drag gesture.",
+                                checked = switchOnDragRelease,
+                                onCheckedChange = settingsViewModel::setFullPlayerSwitchOnDragRelease,
+                                enabled = isAnyDelayEnabled && uiState.fullPlayerLoadingTweaks.showPlaceholders,
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Title,
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.secondary
                                     )
