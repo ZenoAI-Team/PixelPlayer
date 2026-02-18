@@ -694,7 +694,7 @@ fun FullPlayerContent(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
                                         modifier = Modifier.padding(start = 18.dp),
-                                        text = "Now Playing",
+                                        text = stringResource(R.string.now_playing),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                         style = MaterialTheme.typography.labelLargeEmphasized,
@@ -704,7 +704,7 @@ fun FullPlayerContent(
                                     if (currentSong != null && (currentSong.telegramChatId != null || currentSong.contentUriString.startsWith("telegram:"))) {
                                         Icon(
                                             imageVector = androidx.compose.material.icons.Icons.Rounded.Cloud,
-                                            contentDescription = "Cloud Stream",
+                                            contentDescription = stringResource(R.string.cloud_stream),
                                             tint = LocalMaterialTheme.current.onPrimaryContainer.copy(alpha = 0.6f),
                                             modifier = Modifier.padding(start = 8.dp).size(16.dp)
                                         )
@@ -718,14 +718,14 @@ fun FullPlayerContent(
                             modifier = Modifier
                                 // Ancho total = 14dp de padding + 42dp del botón
                                 .width(56.dp)
-                                .height(42.dp),
+                                .height(48.dp),
                             // 2. Alinea el contenido (el botón) al final (derecha) y centrado verticalmente
                             contentAlignment = Alignment.CenterEnd
                         ) {
-                            // 3. Tu botón circular original, sin cambios
+                            // 3. Tu botón circular original
                             Box(
                                 modifier = Modifier
-                                    .size(42.dp)
+                                    .size(48.dp)
                                     .clip(CircleShape)
                                     .background(playerOnAccentColor.copy(alpha = 0.7f))
                                     .clickable(onClick = onCollapse),
@@ -733,7 +733,7 @@ fun FullPlayerContent(
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.rounded_keyboard_arrow_down_24),
-                                    contentDescription = "Colapsar",
+                                    contentDescription = stringResource(R.string.collapse),
                                     tint = playerAccentColor
                                 )
                             }
@@ -778,7 +778,7 @@ fun FullPlayerContent(
                             )
                             Box(
                                 modifier = Modifier
-                                    .height(42.dp)
+                                    .height(48.dp)
                                     .align(Alignment.CenterVertically)
                                     .animateContentSize(
                                         animationSpec = spring(
@@ -811,9 +811,9 @@ fun FullPlayerContent(
                                     Icon(
                                         painter = castIconPainter,
                                         contentDescription = when {
-                                            isCastConnecting || isRemotePlaybackActive -> "Cast"
-                                            isBluetoothActive -> "Bluetooth"
-                                            else -> "Local playback"
+                                                isCastConnecting || isRemotePlaybackActive -> stringResource(R.string.cast)
+                                                isBluetoothActive -> stringResource(R.string.bluetooth)
+                                                else -> stringResource(R.string.local_playback)
                                         },
                                         tint = playerAccentColor
                                     )
@@ -822,7 +822,7 @@ fun FullPlayerContent(
                                             Spacer(Modifier.width(8.dp))
                                             AnimatedContent(
                                                 targetState = when {
-                                                    isCastConnecting -> "Connecting…"
+                                                    isCastConnecting -> stringResource(R.string.sync_pending)
                                                     isRemotePlaybackActive && selectedRouteName != null -> selectedRouteName ?: ""
                                                     else -> ""
                                                 },
@@ -870,7 +870,7 @@ fun FullPlayerContent(
                             // Queue Button
                             Box(
                                 modifier = Modifier
-                                    .size(height = 42.dp, width = 50.dp)
+                                    .size(height = 48.dp, width = 50.dp)
                                     .clip(
                                         RoundedCornerShape(
                                             topStart = 6.dp,
@@ -888,7 +888,7 @@ fun FullPlayerContent(
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.rounded_queue_music_24),
-                                    contentDescription = "Song options",
+                                    contentDescription = stringResource(R.string.song_options),
                                     tint = playerAccentColor
                                 )
                             }
@@ -1094,7 +1094,7 @@ private fun SongMetadataDisplaySection(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(height = 42.dp, width = 50.dp)
+                        .size(height = 48.dp, width = 50.dp)
                         .clip(
                             RoundedCornerShape(
                                 topStart = 50.dp,
@@ -1109,13 +1109,13 @@ private fun SongMetadataDisplaySection(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.rounded_lyrics_24),
-                        contentDescription = "Lyrics",
+                        contentDescription = stringResource(R.string.lyrics),
                         tint = chipContentColor
                     )
                 }
                 Box(
                     modifier = Modifier
-                        .size(height = 42.dp, width = 50.dp)
+                        .size(height = 48.dp, width = 50.dp)
                         .clip(
                             RoundedCornerShape(
                                 topStart = 6.dp,
@@ -1130,7 +1130,7 @@ private fun SongMetadataDisplaySection(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.rounded_queue_music_24),
-                        contentDescription = "Queue",
+                        contentDescription = stringResource(R.string.queue),
                         tint = chipContentColor
                     )
                 }
@@ -1148,7 +1148,7 @@ private fun SongMetadataDisplaySection(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.rounded_lyrics_24),
-                    contentDescription = "Lyrics"
+                    contentDescription = stringResource(R.string.lyrics)
                 )
             }
         }
@@ -2072,7 +2072,7 @@ private fun BottomToggleRow(
                 inactiveContentColor = inactiveContentColor,
                 onClick = onShuffleToggle,
                 iconId = R.drawable.rounded_shuffle_24,
-                contentDesc = "Aleatorio"
+                contentDesc = stringResource(R.string.shuffle)
             )
             val repeatActive = repeatMode != Player.REPEAT_MODE_OFF
             val repeatIcon = when (repeatMode) {
@@ -2090,7 +2090,7 @@ private fun BottomToggleRow(
                 inactiveContentColor = inactiveContentColor,
                 onClick = onRepeatToggle,
                 iconId = repeatIcon,
-                contentDesc = "Repetir"
+                contentDesc = stringResource(R.string.repeat)
             )
             ToggleSegmentButton(
                 modifier = commonModifier,
@@ -2102,7 +2102,7 @@ private fun BottomToggleRow(
                 inactiveContentColor = inactiveContentColor,
                 onClick = onFavoriteToggle,
                 iconId = R.drawable.round_favorite_24,
-                contentDesc = "Favorito"
+                contentDesc = stringResource(R.string.favorite)
             )
         }
     }
