@@ -790,7 +790,8 @@ constructor(
             val duration: Long,
             val trackNumber: Int,
             val year: Int,
-            val dateModified: Long
+            val dateModified: Long,
+            val trackGain: Double? = null
     )
 
     private fun isSongUnchanged(raw: RawSongData, existing: SongEntity?): Boolean {
@@ -931,7 +932,8 @@ constructor(
                                         duration = cursor.getLong(durationCol),
                                         trackNumber = cursor.getInt(trackCol),
                                         year = cursor.getInt(yearCol),
-                                        dateModified = cursor.getLong(dateAddedCol)
+                                        dateModified = cursor.getLong(dateAddedCol),
+                                        trackGain = existingSongsById[songId]?.trackGain
                                 )
                         )
                     }
@@ -1029,9 +1031,14 @@ constructor(
         var trackNumber = raw.trackNumber
         var year = raw.year
         var genre: String? = genreMap[raw.id] // Use mapped genre as default
+        var trackGain: Double? = null
+        var trackPeak: Double? = null
+        var albumGain: Double? = null
+        var albumPeak: Double? = null
 
         val shouldAugmentMetadata =
                 deepScan ||
+                        raw.trackGain == null || // Titan Engine: Force scan for ReplayGain if missing
                         raw.filePath.endsWith(".wav", true) ||
                         raw.filePath.endsWith(".opus", true) ||
                         raw.filePath.endsWith(".ogg", true) ||
@@ -1049,6 +1056,10 @@ constructor(
                         if (!meta.genre.isNullOrBlank()) genre = meta.genre
                         if (meta.trackNumber != null) trackNumber = meta.trackNumber
                         if (meta.year != null) year = meta.year
+                        trackGain = meta.trackGain
+                        trackPeak = meta.trackPeak
+                        albumGain = meta.albumGain
+                        albumPeak = meta.albumPeak
 
                         meta.artwork?.let { art ->
                             val uri =
@@ -1089,7 +1100,11 @@ constructor(
                         },
                 mimeType = audioMetadata?.mimeType ?: raw.mimeType,
                 sampleRate = audioMetadata?.sampleRate,
-                bitrate = audioMetadata?.bitrate
+                bitrate = audioMetadata?.bitrate,
+                trackGain = trackGain ?: audioMetadata?.trackGain,
+                trackPeak = trackPeak ?: audioMetadata?.trackPeak,
+                albumGain = albumGain ?: audioMetadata?.albumGain,
+                albumPeak = albumPeak ?: audioMetadata?.albumPeak
         )
     }
 
@@ -1500,7 +1515,11 @@ constructor(
                     bitrate = 0,
                     sampleRate = 0,
                     telegramChatId = tSong.chatId,
-                    telegramFileId = tSong.fileId
+                    telegramFileId = tSong.fileId,
+                    trackGain = null,
+                    trackPeak = null,
+                    albumGain = null,
+                    albumPeak = null
                 )
                 songsToInsert.add(songEntity)
             }

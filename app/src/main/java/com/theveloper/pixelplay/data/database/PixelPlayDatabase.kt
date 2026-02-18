@@ -24,7 +24,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         GDriveSongEntity::class,
         GDriveFolderEntity::class
     ],
-    version = 22, // Incremented for Google Drive tables
+    version = 23, // Titan Engine: Added ReplayGain columns
 
     exportSchema = false
 )
@@ -433,6 +433,15 @@ abstract class PixelPlayDatabase : RoomDatabase() {
                         last_sync_time INTEGER NOT NULL DEFAULT 0
                     )
                 """.trimIndent())
+            }
+        }
+
+        val MIGRATION_22_23 = object : Migration(22, 23) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE songs ADD COLUMN track_gain REAL")
+                db.execSQL("ALTER TABLE songs ADD COLUMN track_peak REAL")
+                db.execSQL("ALTER TABLE songs ADD COLUMN album_gain REAL")
+                db.execSQL("ALTER TABLE songs ADD COLUMN album_peak REAL")
             }
         }
     }

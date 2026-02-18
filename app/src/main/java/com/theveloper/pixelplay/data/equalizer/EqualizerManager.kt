@@ -3,6 +3,8 @@ package com.theveloper.pixelplay.data.equalizer
 import android.media.audiofx.Equalizer
 import android.media.audiofx.BassBoost
 import android.media.audiofx.Virtualizer
+import com.theveloper.pixelplay.data.service.player.DualPlayerEngine
+import com.theveloper.pixelplay.data.service.player.TitanEqBand
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,14 +13,15 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Manages Android's built-in audio effects (Equalizer, BassBoost, Virtualizer).
- * Attaches to ExoPlayer's audio session ID for real-time audio processing.
+ * Manages audio effects including Android's built-in effects and the high-fidelity Titan DSP Engine.
  * 
  * Thread-safe: All effect operations run on the main thread.
- * Crossfade compatible: Effects are attached to the audio session, not the player instance.
+ * Crossfade compatible: Titan effects are part of the ExoPlayer chain in DualPlayerEngine.
  */
 @Singleton
-class EqualizerManager @Inject constructor() {
+class EqualizerManager @Inject constructor(
+    private val engine: DualPlayerEngine
+) {
     
     companion object {
         private const val TAG = "EqualizerManager"
@@ -63,6 +66,19 @@ class EqualizerManager @Inject constructor() {
 
     private val _loudnessEnhancerStrength = MutableStateFlow(0)
     val loudnessEnhancerStrength: StateFlow<Int> = _loudnessEnhancerStrength.asStateFlow()
+
+    // Titan Engine State
+    private val _titanPreAmp = MutableStateFlow(0f)
+    val titanPreAmp: StateFlow<Float> = _titanPreAmp.asStateFlow()
+
+    private val _titanEqEnabled = MutableStateFlow(false)
+    val titanEqEnabled: StateFlow<Boolean> = _titanEqEnabled.asStateFlow()
+
+    private val _titanEqBands = MutableStateFlow<List<TitanEqBand>>(emptyList())
+    val titanEqBands: StateFlow<List<TitanEqBand>> = _titanEqBands.asStateFlow()
+
+    private val _titanReplayGainMode = MutableStateFlow(0)
+    val titanReplayGainMode: StateFlow<Int> = _titanReplayGainMode.asStateFlow()
     
     // Actual millibel range from the device's equalizer
     private var minEqLevel: Short = -1500
@@ -319,7 +335,7 @@ class EqualizerManager @Inject constructor() {
     }
     
     /**
-     * Restores equalizer state from saved preferences.
+     * Restores equalizer and Titan DSP state from saved preferences.
      */
     fun restoreState(
         enabled: Boolean,
@@ -330,7 +346,12 @@ class EqualizerManager @Inject constructor() {
         virtualizerEnabled: Boolean,
         virtualizerStrength: Int,
         loudnessEnabled: Boolean,
-        loudnessStrength: Int
+        loudnessStrength: Int,
+        // Titan
+        titanEnabled: Boolean = false,
+        titanPreAmp: Float = 0f,
+        titanReplayGainMode: Int = 0,
+        titanBands: List<TitanEqBand> = emptyList()
     ) {
         _isEnabled.value = enabled
         _bassBoostEnabled.value = bassBoostEnabled
@@ -339,6 +360,14 @@ class EqualizerManager @Inject constructor() {
         _virtualizerStrength.value = virtualizerStrength
         _loudnessEnhancerEnabled.value = loudnessEnabled
         _loudnessEnhancerStrength.value = loudnessStrength.coerceIn(0, MAX_LOUDNESS_GAIN_MB)
+
+        // Titan
+        _titanEqEnabled.value = titanEnabled
+        _titanPreAmp.value = titanPreAmp
+        _titanReplayGainMode.value = titanReplayGainMode
+        _titanEqBands.value = titanBands
+
+        applyTitanState()
         
         val preset = if (presetName == "custom") {
             EqualizerPreset.custom(customBands)
@@ -355,6 +384,39 @@ class EqualizerManager @Inject constructor() {
             applyBandLevels(preset.bandLevels)
             applyCurrentEffectStateToAttachedEffects()
         }
+    }
+
+    private fun applyTitanState() {
+        engine.getTitanProcessorA().setEqEnabled(_titanEqEnabled.value)
+        engine.getTitanProcessorB().setEqEnabled(_titanEqEnabled.value)
+        engine.getTitanProcessorA().setPreAmp(_titanPreAmp.value)
+        engine.getTitanProcessorB().setPreAmp(_titanPreAmp.value)
+        engine.getTitanProcessorA().setEqBands(_titanEqBands.value)
+        engine.getTitanProcessorB().setEqBands(_titanEqBands.value)
+        engine.updateReplayGainMode(_titanReplayGainMode.value)
+    }
+
+    fun setTitanPreAmp(db: Float) {
+        _titanPreAmp.value = db
+        engine.getTitanProcessorA().setPreAmp(db)
+        engine.getTitanProcessorB().setPreAmp(db)
+    }
+
+    fun setTitanEqEnabled(enabled: Boolean) {
+        _titanEqEnabled.value = enabled
+        engine.getTitanProcessorA().setEqEnabled(enabled)
+        engine.getTitanProcessorB().setEqEnabled(enabled)
+    }
+
+    fun setTitanEqBands(bands: List<TitanEqBand>) {
+        _titanEqBands.value = bands
+        engine.getTitanProcessorA().setEqBands(bands)
+        engine.getTitanProcessorB().setEqBands(bands)
+    }
+
+    fun setTitanReplayGainMode(mode: Int) {
+        _titanReplayGainMode.value = mode
+        engine.updateReplayGainMode(mode)
     }
 
     private fun applyCurrentEffectStateToAttachedEffects() {

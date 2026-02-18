@@ -40,6 +40,11 @@ data class Song(
     val telegramChatId: Long? = null, // ID of the chat where the file is located
     val neteaseId: Long? = null, // Netease Cloud Music song ID
     val gdriveFileId: String? = null, // Google Drive file ID
+    // ReplayGain metadata (Titan Engine)
+    val trackGain: Double? = null,
+    val trackPeak: Double? = null,
+    val albumGain: Double? = null,
+    val albumPeak: Double? = null,
 ) : Parcelable {
     @IgnoredOnParcel
     private val defaultArtistDelimiters = listOf("/", ";", ",", "+", "&")
@@ -96,7 +101,11 @@ data class Song(
                 telegramFileId = null,
                 telegramChatId = null,
                 neteaseId = null,
-                gdriveFileId = null
+                gdriveFileId = null,
+                trackGain = null,
+                trackPeak = null,
+                albumGain = null,
+                albumPeak = null
             )
         }
     }

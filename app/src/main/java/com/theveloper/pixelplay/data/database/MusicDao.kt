@@ -770,7 +770,11 @@ interface MusicDao {
     @Query("""
     SELECT mime_type AS mimeType,
            bitrate,
-           sample_rate AS sampleRate
+           sample_rate AS sampleRate,
+           track_gain AS trackGain,
+           track_peak AS trackPeak,
+           album_gain AS albumGain,
+           album_peak AS albumPeak
     FROM songs
     WHERE id = :id
     """)
