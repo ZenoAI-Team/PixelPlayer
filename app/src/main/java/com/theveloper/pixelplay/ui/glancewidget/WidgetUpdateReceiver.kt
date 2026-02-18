@@ -13,7 +13,7 @@ import timber.log.Timber
 class WidgetUpdateReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != "com.example.pixelplay.ACTION_WIDGET_UPDATE_PLAYBACK_STATE") return
+        if (intent.action != "com.theveloper.pixelplay.ACTION_WIDGET_UPDATE_PLAYBACK_STATE") return
 
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.Main + SupervisorJob()).launch {
