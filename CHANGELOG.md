@@ -7,9 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.5.0-beta] - 2026-01-14
+## [0.6.0-beta] - 2026-02-14
 
 ### Added
+- **Void-Iconic Identity**: Applied AMOLED black background and high-contrast neon accents for the signature "Void-Neon" look.
 - Implemented 10-band Equalizer and effects suite (feat: @theovilardo)
 - Added M3U playlist import/export support (feat/fix: @lostf1sh, @theovilardo)
 - Integrated Deezer API for artist images (feat: @lostf1sh)

@@ -76,15 +76,15 @@ object LyricsUtils {
                 val seconds = lineMatcher.group(2)?.toLong() ?: 0
                 val fraction = lineMatcher.group(3)?.toLong() ?: 0
                 val textWithTags = stripFormatCharacters(lineMatcher.group(4)?.trim() ?: "")
-                val text = stripLrcTimestamps(textWithTags)
+                val text = stripLrcTimestamps(textWithTags).replace(LRC_WORD_TAG_REGEX, "")
 
                 val millis = if (lineMatcher.group(3)?.length == 2) fraction * 10 else fraction
                 val lineTimestamp = minutes * 60 * 1000 + seconds * 1000 + millis
 
                 // Enhanced word-by-word parsing
-                if (text.contains(LRC_WORD_TAG_REGEX)) {
+                if (textWithTags.contains(LRC_WORD_TAG_REGEX)) {
                     val words = mutableListOf<SyncedWord>()
-                    val parts = text.split(LRC_WORD_SPLIT_REGEX)
+                    val parts = textWithTags.split(LRC_WORD_SPLIT_REGEX)
 
                     for (part in parts) {
                         if (part.isEmpty()) continue
@@ -93,7 +93,13 @@ object LyricsUtils {
                             val wordMinutes = wordMatcher.group(1)?.toLong() ?: 0
                             val wordSeconds = wordMatcher.group(2)?.toLong() ?: 0
                             val wordFraction = wordMatcher.group(3)?.toLong() ?: 0
-                            val wordText = stripFormatCharacters(wordMatcher.group(4) ?: "")
+                            var wordText = stripFormatCharacters(wordMatcher.group(4) ?: "")
+                            // If there is an untagged translation (e.g. following \n),
+                            // we truncate the word text to exclude it from timed highlighting.
+                            if (wordText.contains("\\n")) {
+                                wordText = wordText.substringBefore("\\n")
+                            }
+
                             val wordMillis = if (wordMatcher.group(3)?.length == 2) wordFraction * 10 else wordFraction
                             val wordTimestamp = wordMinutes * 60 * 1000 + wordSeconds * 1000 + wordMillis
                             if (wordText.isNotEmpty()) {
