@@ -122,11 +122,21 @@ private data class Contributor(
     val contributions: Int? = null,
 )
 
-private val CoreMaintainer = Contributor(
+private val LeadArchitect = Contributor(
+    id = "voidx3d",
+    displayName = "VoidX3D",
+    role = "Lead Architect & Project Visionary",
+    detail = "Pioneering the Void-Iconic evolution of PixelPlayer.",
+    avatarUrl = null,
+    iconRes = R.drawable.round_developer_board_24,
+    githubUrl = "https://github.com/voidx3d",
+)
+
+private val Creator = Contributor(
     id = "theovilardo",
     displayName = "Theo Vilardo",
-    role = "Creator and maintainer",
-    detail = "Building PixelPlayer with direct community feedback.",
+    role = "Creator and Original Maintainer",
+    detail = "The foundation of PixelPlayer was built here.",
     avatarUrl = "https://avatars.githubusercontent.com/u/26845343?v=4",
     iconRes = R.drawable.round_developer_board_24,
     githubUrl = "https://github.com/theovilardo",
@@ -260,7 +270,10 @@ fun AboutScreen(
             val result = githubService.fetchContributors()
             result.onSuccess { githubContributors ->
                 contributors = githubContributors
-                    .filter { normalizeHandle(it.login) != CoreMaintainer.id }
+                    .filter { handle ->
+                        val normalized = normalizeHandle(handle.login)
+                        normalized != LeadArchitect.id && normalized != Creator.id
+                    }
                     .map { github ->
                         Contributor(
                             id = normalizeHandle(github.login),
@@ -307,7 +320,8 @@ fun AboutScreen(
 
     val excludedIds = remember(spotlightContributors) {
         buildSet {
-            add(CoreMaintainer.id)
+            add(LeadArchitect.id)
+            add(Creator.id)
             spotlightContributors.forEach { spotlight ->
                 add(spotlight.id)
                 addAll(PinnedAliases[spotlight.id].orEmpty())
@@ -438,23 +452,84 @@ fun AboutScreen(
                 )
             }
 
+            item(key = "titan_engine_title") {
+                AboutSectionHeader(
+                    title = "Titan DSP Engine",
+                    subtitle = "Audiophile-grade 32-bit precision processing.",
+                    modifier = Modifier.padding(top = 24.dp),
+                )
+            }
+            item(key = "titan_engine_detail") {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = expressiveListShape(index = 0, count = 1),
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                ) {
+                    Text(
+                        text = "Features a 32-band parametric equalizer, bit-perfect output, and pro-level gain management for the ultimate listening experience.",
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            item(key = "void_intelligence_title") {
+                AboutSectionHeader(
+                    title = "Void-Intelligence",
+                    subtitle = "Gemini 2.0 AI-augmented automation.",
+                    modifier = Modifier.padding(top = 24.dp),
+                )
+            }
+            item(key = "void_intelligence_detail") {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = expressiveListShape(index = 0, count = 1),
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                ) {
+                    Text(
+                        text = "Intelligent playlist generation, mood classification, and smart metadata normalization powered by Gemini 2.0.",
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
             item(key = "maintainer_title") {
                 AboutSectionHeader(
-                    title = "Maintainer",
-                    subtitle = "The person behind PixelPlayer.",
+                    title = "Project Leadership",
+                    subtitle = "The visionaries behind the Void-Iconic edition.",
                     modifier = Modifier.padding(top = 24.dp),
                 )
             }
 
-            item(key = "maintainer_card") {
+            item(key = "lead_architect_card") {
                 ContributorCard(
-                    contributor = CoreMaintainer,
-                    shape = expressiveListShape(index = 0, count = 1),
+                    contributor = LeadArchitect,
+                    shape = expressiveListShape(index = 0, count = 2),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
                     showContributionCount = false,
-                    onCardClick = CoreMaintainer.githubUrl?.let { url -> { openUrl(context, url) } },
+                    onCardClick = LeadArchitect.githubUrl?.let { url -> { openUrl(context, url) } },
+                )
+            }
+
+            item(key = "creator_card") {
+                ContributorCard(
+                    contributor = Creator,
+                    shape = expressiveListShape(index = 1, count = 2),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 3.dp),
+                    showContributionCount = false,
+                    onCardClick = Creator.githubUrl?.let { url -> { openUrl(context, url) } },
                 )
             }
 
@@ -615,14 +690,14 @@ private fun AboutHeroCard(
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
                         Text(
-                            text = "PixelPlayer",
+                            text = "PixelPlayer: Void-Iconic",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                         Text(
-                            text = "Open source music player built with its community.",
+                            text = "The definitive AI-augmented high-fidelity music platform.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 2,
@@ -647,7 +722,7 @@ private fun AboutHeroCard(
                         },
                 ) {
                     Text(
-                        text = "Version v$versionName",
+                        text = "Version v$versionName (Titan)",
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onTertiaryContainer,
