@@ -52,6 +52,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -95,6 +96,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 private const val HeaderVisualOverscan = 1.03f
+private val HeaderGradientLift = 10.dp
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -458,15 +460,21 @@ private fun CollapsingAlbumTopBar(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
+                            .drawWithCache {
+                                val liftPx = HeaderGradientLift.toPx()
+                                val brush = Brush.verticalGradient(
                                     colorStops = arrayOf(
                                         0.30f to Color.Transparent,
-                                        0.76f to MaterialTheme.colorScheme.surface,
-                                        1f to MaterialTheme.colorScheme.surface
-                                    )
+                                        0.60f to surfaceColor.copy(alpha = 0.30f),
+                                        0.83f to surfaceColor.copy(alpha = 0.90f),
+                                        0.92f to surfaceColor,
+                                        1f to surfaceColor
+                                    ),
+                                    startY = -liftPx,
+                                    endY = size.height - liftPx
                                 )
-                            )
+                                onDrawBehind { drawRect(brush = brush) }
+                            }
                     )
                 }
 

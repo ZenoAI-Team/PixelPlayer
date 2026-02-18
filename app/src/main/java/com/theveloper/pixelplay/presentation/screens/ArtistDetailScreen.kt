@@ -39,6 +39,7 @@ import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -87,6 +88,7 @@ import coil.request.ImageRequest
 import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
 
 private const val HeaderVisualOverscan = 1.03f
+private val HeaderGradientLift = 10.dp
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -657,15 +659,21 @@ private fun CustomCollapsingTopBar(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
+                            .drawWithCache {
+                                val liftPx = HeaderGradientLift.toPx()
+                                val brush = Brush.verticalGradient(
                                     colorStops = arrayOf(
                                         0.22f to Color.Transparent,
-                                        0.72f to MaterialTheme.colorScheme.surface,
-                                        1f to MaterialTheme.colorScheme.surface
-                                    )
+                                        0.56f to surfaceColor.copy(alpha = 0.30f),
+                                        0.80f to surfaceColor.copy(alpha = 0.90f),
+                                        0.91f to surfaceColor,
+                                        1f to surfaceColor
+                                    ),
+                                    startY = -liftPx,
+                                    endY = size.height - liftPx
                                 )
-                            )
+                                onDrawBehind { drawRect(brush = brush) }
+                            }
                     )
                 }
                 Box(
