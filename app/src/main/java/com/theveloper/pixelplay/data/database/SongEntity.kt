@@ -60,7 +60,12 @@ data class SongEntity(
     @ColumnInfo(name = "bitrate") val bitrate: Int? = null, // bits per second
     @ColumnInfo(name = "sample_rate") val sampleRate: Int? = null, // Hz
     @ColumnInfo(name = "telegram_chat_id") val telegramChatId: Long? = null, // Added for Telegram integration
-    @ColumnInfo(name = "telegram_file_id") val telegramFileId: Int? = null // Added for Telegram integration
+    @ColumnInfo(name = "telegram_file_id") val telegramFileId: Int? = null, // Added for Telegram integration
+    // ReplayGain metadata (Titan Engine)
+    @ColumnInfo(name = "track_gain") val trackGain: Double? = null,
+    @ColumnInfo(name = "track_peak") val trackPeak: Double? = null,
+    @ColumnInfo(name = "album_gain") val albumGain: Double? = null,
+    @ColumnInfo(name = "album_peak") val albumPeak: Double? = null
 )
 
 fun SongEntity.toSong(): Song {
@@ -98,7 +103,11 @@ fun SongEntity.toSong(): Song {
         } else null,
         mimeType = this.mimeType,
         bitrate = this.bitrate,
-        sampleRate = this.sampleRate
+        sampleRate = this.sampleRate,
+        trackGain = this.trackGain,
+        trackPeak = this.trackPeak,
+        albumGain = this.albumGain,
+        albumPeak = this.albumPeak
     )
 }
 
@@ -150,7 +159,11 @@ fun SongEntity.toSongWithArtistRefs(artists: List<ArtistEntity>, crossRefs: List
         } else null,
         mimeType = this.mimeType,
         bitrate = this.bitrate,
-        sampleRate = this.sampleRate
+        sampleRate = this.sampleRate,
+        trackGain = this.trackGain,
+        trackPeak = this.trackPeak,
+        albumGain = this.albumGain,
+        albumPeak = this.albumPeak
     )
 }
 
@@ -181,7 +194,11 @@ fun Song.toEntity(filePathFromMediaStore: String, parentDirFromMediaStore: Strin
         year = this.year,
         mimeType = this.mimeType,
         bitrate = this.bitrate,
-        sampleRate = this.sampleRate
+        sampleRate = this.sampleRate,
+        trackGain = this.trackGain,
+        trackPeak = this.trackPeak,
+        albumGain = this.albumGain,
+        albumPeak = this.albumPeak
     )
 }
 
@@ -207,6 +224,10 @@ fun Song.toEntityWithoutPaths(): SongEntity {
         year = this.year,
         mimeType = this.mimeType,
         bitrate = this.bitrate,
-        sampleRate = this.sampleRate
+        sampleRate = this.sampleRate,
+        trackGain = this.trackGain,
+        trackPeak = this.trackPeak,
+        albumGain = this.albumGain,
+        albumPeak = this.albumPeak
     )
 }
