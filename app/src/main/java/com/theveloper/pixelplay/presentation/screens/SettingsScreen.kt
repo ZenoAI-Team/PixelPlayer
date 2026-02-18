@@ -70,7 +70,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.theveloper.pixelplay.R
-import com.theveloper.pixelplay.presentation.components.CollapsibleCommonTopBar
 import com.theveloper.pixelplay.presentation.components.ExpressiveTopBarContent
 import com.theveloper.pixelplay.presentation.components.MiniPlayerHeight
 import com.theveloper.pixelplay.presentation.model.SettingsCategory
@@ -85,7 +84,50 @@ import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.theveloper.pixelplay.data.preferences.LaunchTab
 
-// SettingsTopBar removed, replaced by CollapsibleCommonTopBar
+@Composable
+fun SettingsTopBar(
+        collapseFraction: Float,
+        headerHeight: Dp,
+        onBackPressed: () -> Unit,
+        title: String = "Settings",
+        expandedStartPadding: Dp = 20.dp,
+        collapsedStartPadding: Dp = 68.dp,
+        maxLines: Int = 1
+) {
+    val surfaceColor = MaterialTheme.colorScheme.surface
+
+    Box(
+            modifier =
+                    Modifier.fillMaxWidth()
+                            .height(headerHeight)
+                            .background(surfaceColor.copy(alpha = collapseFraction))
+    ) {
+        Box(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+            FilledIconButton(
+                    modifier =
+                            Modifier.align(Alignment.TopStart)
+                                .padding(start = 12.dp, top = 4.dp)
+                                .zIndex(1f), // Ensure icon stays on top of animated text
+                    onClick = onBackPressed,
+                    colors =
+                            IconButtonDefaults.filledIconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            )
+            ) {
+                Icon(painterResource(R.drawable.rounded_arrow_back_24), contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurface)
+            }
+
+            ExpressiveTopBarContent(
+                    title = title,
+                    collapseFraction = collapseFraction,
+                    modifier = Modifier.fillMaxSize(),
+                    collapsedTitleStartPadding = collapsedStartPadding,
+                    expandedTitleStartPadding = expandedStartPadding,
+                    maxLines = maxLines
+            )
+        }
+    }
+}
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -205,7 +247,7 @@ fun SettingsScreen(
         LazyColumn(
                 state = lazyListState,
                 contentPadding = PaddingValues(
-                    top = currentTopBarHeightDp + 8.dp,
+                    top = currentTopBarHeightDp,
                     start = 16.dp,
                     end = 16.dp,
                     bottom = MiniPlayerHeight + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 8.dp
@@ -278,11 +320,10 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(32.dp))
             }
         }
-        CollapsibleCommonTopBar(
-                title = "Settings",
+        SettingsTopBar(
                 collapseFraction = collapseFraction,
                 headerHeight = currentTopBarHeightDp,
-                onBackClick = onNavigationIconClick
+                onBackPressed = onNavigationIconClick
         )
 
         // Block interaction during transition

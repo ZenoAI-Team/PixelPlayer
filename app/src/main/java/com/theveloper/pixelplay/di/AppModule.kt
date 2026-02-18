@@ -119,9 +119,12 @@ object AppModule {
             PixelPlayDatabase.MIGRATION_19_20,
             PixelPlayDatabase.MIGRATION_20_21,
             PixelPlayDatabase.MIGRATION_21_22,
-            PixelPlayDatabase.MIGRATION_22_23
+            PixelPlayDatabase.MIGRATION_22_23,
+            PixelPlayDatabase.MIGRATION_23_24,
+            PixelPlayDatabase.MIGRATION_24_25,
+            PixelPlayDatabase.MIGRATION_25_26
         )
-            .fallbackToDestructiveMigration(dropAllTables = true)
+            .fallbackToDestructiveMigration()
             .build()
     }
 
@@ -165,6 +168,12 @@ object AppModule {
     @Provides
     fun provideLyricsDao(database: PixelPlayDatabase): LyricsDao {
         return database.lyricsDao()
+    }
+
+    @Singleton
+    @Provides
+    fun provideWaveformDao(database: PixelPlayDatabase): com.theveloper.pixelplay.data.database.WaveformDao {
+        return database.waveformDao()
     }
 
     @Singleton
@@ -261,6 +270,8 @@ object AppModule {
         telegramRepository: com.theveloper.pixelplay.data.telegram.TelegramRepository,
         songRepository: SongRepository,
         favoritesDao: FavoritesDao,
+        engagementDao: EngagementDao,
+        waveformDao: com.theveloper.pixelplay.data.database.WaveformDao,
         artistImageRepository: ArtistImageRepository,
         folderTreeBuilder: FolderTreeBuilder
     ): MusicRepository {
@@ -275,6 +286,8 @@ object AppModule {
             telegramRepository = telegramRepository,
             songRepository = songRepository,
             favoritesDao = favoritesDao,
+            engagementDao = engagementDao,
+            waveformDao = waveformDao,
             artistImageRepository = artistImageRepository,
             folderTreeBuilder = folderTreeBuilder
         )

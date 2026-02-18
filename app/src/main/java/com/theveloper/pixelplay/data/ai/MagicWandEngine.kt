@@ -9,7 +9,7 @@ import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import kotlin.math.max
 
-class AiPlaylistGenerator @Inject constructor(
+class MagicWandEngine @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository,
     private val dailyMixManager: DailyMixManager,
     private val json: Json

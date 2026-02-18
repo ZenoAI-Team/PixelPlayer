@@ -21,3 +21,11 @@ val LightPrimary = Color(0xFF6C4FF5)
 val LightPrimaryContainer = Color(0xFFE3DBFF)
 val LightOnPrimaryContainer = Color(0xFF23005C)
 val LightOutline = Color(0xFF78659A)
+
+// Void-Neon Signature Palette
+val VoidBlack = Color(0xFF000000)
+val VoidNeonCyan = Color(0xFF00E5FF)
+val VoidNeonMagenta = Color(0xFFF50057)
+val VoidNeonLime = Color(0xFF76FF03)
+val VoidNeonPurple = Color(0xFFD500F9)
+val VoidSurface = Color(0xFF0D0D0D)

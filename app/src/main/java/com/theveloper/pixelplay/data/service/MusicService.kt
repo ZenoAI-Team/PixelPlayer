@@ -362,6 +362,13 @@ class MusicService : MediaSessionService() {
         override fun onMediaItemTransition(item: MediaItem?, reason: Int) {
             requestWidgetFullUpdate(force = true)
             mediaSession?.let { refreshMediaSessionUi(it) }
+
+            // Analytics: Record play event
+            item?.mediaId?.toLongOrNull()?.let { songId ->
+                serviceScope.launch {
+                    musicRepository.recordPlayEvent(songId)
+                }
+            }
         }
 
         override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {

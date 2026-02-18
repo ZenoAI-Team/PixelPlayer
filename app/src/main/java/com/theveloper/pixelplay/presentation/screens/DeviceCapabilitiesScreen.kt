@@ -57,7 +57,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
-import com.theveloper.pixelplay.presentation.components.CollapsibleCommonTopBar
 import com.theveloper.pixelplay.presentation.components.MiniPlayerHeight
 import com.theveloper.pixelplay.presentation.viewmodel.DeviceCapabilitiesViewModel
 import com.theveloper.pixelplay.presentation.viewmodel.PlayerViewModel
@@ -138,7 +137,7 @@ fun DeviceCapabilitiesScreen(
              LazyColumn(
                 state = lazyListState,
                 contentPadding = PaddingValues(
-                    top = currentTopBarHeightDp + 8.dp,
+                    top = currentTopBarHeightDp,
                     start = 16.dp,
                     end = 16.dp,
                     bottom = MiniPlayerHeight + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
@@ -196,13 +195,13 @@ fun DeviceCapabilitiesScreen(
         }
         
         // Top Bar
-        CollapsibleCommonTopBar(
-            title = "Device Capabilities",
+        SettingsTopBar(
             collapseFraction = collapseFraction,
             headerHeight = currentTopBarHeightDp,
-            onBackClick = { navController.popBackStack() },
-            expandedTitleStartPadding = 20.dp,
-            collapsedTitleStartPadding = 68.dp
+            onBackPressed = { navController.popBackStack() },
+            title = "Device Capabilities",
+            expandedStartPadding = 20.dp,
+            collapsedStartPadding = 68.dp
         )
     }
 }
