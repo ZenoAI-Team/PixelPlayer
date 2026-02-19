@@ -19,66 +19,79 @@ object AudioFileProvider {
     suspend fun getWavFile(context: Context, uri: Uri): Result<File> = withContext(Dispatchers.IO) {
         runCatching {
             val extractor = MediaExtractor()
-            extractor.setDataSource(context, uri, null)
-            val trackIndex = findAudioTrack(extractor)
-            if (trackIndex == -1) {
-                extractor.release()
-                error("No audio track found.")
-            }
-            extractor.selectTrack(trackIndex)
-            val format = extractor.getTrackFormat(trackIndex)
-
-            val mime = format.getString(MediaFormat.KEY_MIME) ?: error("MIME type not found.")
-            val decoder = MediaCodec.createDecoderByType(mime)
-            decoder.configure(format, null, null, 0)
-            decoder.start()
-
+            var decoder: MediaCodec? = null
+            var fileOutputStream: FileOutputStream? = null
             val tempWavFile = File.createTempFile("input_mono", ".wav", context.cacheDir)
-            val fileOutputStream = FileOutputStream(tempWavFile)
-            // Escribimos una cabecera WAV vacía (para 1 canal, mono)
-            val wavHeader = WavHeader(0, 0, 0, 0, 1)
-            fileOutputStream.write(wavHeader.asByteArray())
 
             var totalBytesWritten = 0
-            val bufferInfo = MediaCodec.BufferInfo()
-            var isEndOfStream = false
+            var sampleRate = 0
+            try {
+                extractor.setDataSource(context, uri, null)
+                val trackIndex = findAudioTrack(extractor)
+                if (trackIndex == -1) {
+                    error("No audio track found.")
+                }
+                extractor.selectTrack(trackIndex)
+                val format = extractor.getTrackFormat(trackIndex)
+                sampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE)
 
-            while (!isEndOfStream) {
-                val inputBufferIndex = decoder.dequeueInputBuffer(TIMEOUT_US)
-                if (inputBufferIndex >= 0) {
-                    val inputBuffer = decoder.getInputBuffer(inputBufferIndex)!!
-                    val sampleSize = extractor.readSampleData(inputBuffer, 0)
-                    if (sampleSize < 0) {
-                        decoder.queueInputBuffer(inputBufferIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
-                        isEndOfStream = true
-                    } else {
-                        decoder.queueInputBuffer(inputBufferIndex, 0, sampleSize, extractor.sampleTime, 0)
-                        extractor.advance()
+                val mime = format.getString(MediaFormat.KEY_MIME) ?: error("MIME type not found.")
+                decoder = MediaCodec.createDecoderByType(mime)
+                decoder.configure(format, null, null, 0)
+                decoder.start()
+
+                fileOutputStream = FileOutputStream(tempWavFile)
+                // Escribimos una cabecera WAV vacía (para 1 canal, mono)
+                val wavHeader = WavHeader(0, 0, 0, 0, 1)
+                fileOutputStream.write(wavHeader.asByteArray())
+
+                val bufferInfo = MediaCodec.BufferInfo()
+                var isEndOfStream = false
+
+                while (!isEndOfStream) {
+                    val inputBufferIndex = decoder.dequeueInputBuffer(TIMEOUT_US)
+                    if (inputBufferIndex >= 0) {
+                        val inputBuffer = decoder.getInputBuffer(inputBufferIndex)
+                        if (inputBuffer != null) {
+                            val sampleSize = extractor.readSampleData(inputBuffer, 0)
+                            if (sampleSize < 0) {
+                                decoder.queueInputBuffer(inputBufferIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+                                isEndOfStream = true
+                            } else {
+                                decoder.queueInputBuffer(inputBufferIndex, 0, sampleSize, extractor.sampleTime, 0)
+                                extractor.advance()
+                            }
+                        }
+                    }
+
+                    var outputBufferIndex = decoder.dequeueOutputBuffer(bufferInfo, TIMEOUT_US)
+                    while (outputBufferIndex >= 0) {
+                        val outputBuffer = decoder.getOutputBuffer(outputBufferIndex)
+                        if (outputBuffer != null) {
+                            val chunk = ByteArray(bufferInfo.size)
+                            outputBuffer.get(chunk)
+
+                            // --- CONVERSIÓN A MONO ---
+                            val monoChunk = stereoToMono(chunk)
+                            fileOutputStream.write(monoChunk)
+                            totalBytesWritten += monoChunk.size
+                        }
+
+                        decoder.releaseOutputBuffer(outputBufferIndex, false)
+                        outputBufferIndex = decoder.dequeueOutputBuffer(bufferInfo, TIMEOUT_US)
                     }
                 }
-
-                var outputBufferIndex = decoder.dequeueOutputBuffer(bufferInfo, TIMEOUT_US)
-                while (outputBufferIndex >= 0) {
-                    val outputBuffer = decoder.getOutputBuffer(outputBufferIndex)!!
-                    val chunk = ByteArray(bufferInfo.size)
-                    outputBuffer.get(chunk)
-
-                    // --- CONVERSIÓN A MONO ---
-                    val monoChunk = stereoToMono(chunk)
-                    fileOutputStream.write(monoChunk)
-                    totalBytesWritten += monoChunk.size
-
-                    decoder.releaseOutputBuffer(outputBufferIndex, false)
-                    outputBufferIndex = decoder.dequeueOutputBuffer(bufferInfo, TIMEOUT_US)
+            } finally {
+                fileOutputStream?.close()
+                try {
+                    decoder?.stop()
+                } catch (e: Exception) {
+                    // Ignore
                 }
+                decoder?.release()
+                extractor.release()
             }
 
-            fileOutputStream.close()
-            decoder.stop()
-            decoder.release()
-            extractor.release()
-
-            val sampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE)
             val finalHeader = WavHeader(
                 fileSize = totalBytesWritten + 36,
                 subchunk2Size = totalBytesWritten,
