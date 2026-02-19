@@ -35,6 +35,16 @@
     <string name="cancel">Cancel</string>
     <string name="import_file">Import</string>
 
+    <!-- UI Labels -->
+    <string name="shuffle">Shuffle</string>
+    <string name="repeat">Repeat</string>
+    <string name="favorite">Favorite</string>
+    <string name="collapse">Collapse</string>
+    <string name="expand_menu">Expand menu</string>
+    <string name="settings">Settings</string>
+    <string name="reorder_tabs">Reorder tabs</string>
+    <string name="more_options">More options</string>
+
     <!-- Sync/Progress strings -->
     <string name="sync_scanning">Scanning music files…</string>
     <string name="sync_processing">Processing files…</string>
