@@ -123,7 +123,6 @@ object AppModule {
             PixelPlayDatabase.MIGRATION_23_24,
             PixelPlayDatabase.MIGRATION_24_25,
             PixelPlayDatabase.MIGRATION_25_26
-            PixelPlayDatabase.MIGRATION_22_23
         )
             .fallbackToDestructiveMigration()
             .build()
