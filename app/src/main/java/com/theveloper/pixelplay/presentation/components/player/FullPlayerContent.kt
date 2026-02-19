@@ -128,6 +128,9 @@ import java.util.Locale
 import kotlin.math.roundToLong
 import com.theveloper.pixelplay.presentation.components.WavySliderExpressive
 import com.theveloper.pixelplay.presentation.components.ToggleSegmentButton
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @SuppressLint("StateFlowValueCalledInComposition")
@@ -471,6 +474,8 @@ fun FullPlayerContent(
     @Composable
     fun PlayerProgressSection() {
         val isMetadataForCurrentSong = playbackAudioMetadata.mediaId == song.id
+        val amplitudes by playerViewModel.currentWaveform.collectAsState()
+
         PlayerProgressBarSection(
             songId = song.id,
             currentPositionProvider = currentPositionProvider,
@@ -490,7 +495,8 @@ fun FullPlayerContent(
             timeTextColor = playerOnBaseColor,
             allowRealtimeUpdates = allowRealtimeUpdates,
             isSheetDragGestureActive = isSheetDragGestureActive,
-            loadingTweaks = loadingTweaks
+            loadingTweaks = loadingTweaks,
+            amplitudes = amplitudes
         )
     }
 
@@ -623,6 +629,23 @@ fun FullPlayerContent(
             }
         }
     }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Glassmorphism Background
+        AsyncImage(
+            model = song.albumArtUriString,
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxSize()
+                .blur(radius = 40.dp)
+                .graphicsLayer { alpha = 0.6f },
+            contentScale = ContentScale.Crop
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.4f))
+        )
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -904,6 +927,7 @@ fun FullPlayerContent(
             FullPlayerPortraitContent(paddingValues)
         }
     }
+    } // End Glassmorphism Box
     AnimatedVisibility(
         visible = showLyricsSheet,
         enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn(),
@@ -1195,6 +1219,7 @@ private fun PlayerProgressBarSection(
     allowRealtimeUpdates: Boolean = true,
     isSheetDragGestureActive: Boolean = false,
     loadingTweaks: FullPlayerLoadingTweaks? = null,
+    amplitudes: FloatArray = floatArrayOf(),
     modifier: Modifier = Modifier
 ) {
     val expansionFraction = expansionFractionProvider()
@@ -1341,23 +1366,21 @@ private fun PlayerProgressBarSection(
                 .heightIn(min = 70.dp)
         ) {
             
-            // Isolated Slider Component
-            EfficientSlider(
-                valueState = animatedProgressState,
-                onValueChange = { sliderDragValue = it },
-                onValueChangeFinished = {
-                    sliderDragValue?.let { finalValue ->
-                        val targetMs = (finalValue * durationForCalc).roundToLong()
-                        optimisticPosition = targetMs
-                        onSeek(targetMs)
-                    }
-                    sliderDragValue = null
+            // Isolated Slider Component - WaveformScrubber
+            WaveformScrubber(
+                amplitudes = amplitudes,
+                progress = animatedProgressState.value,
+                onProgressChange = { newValue ->
+                    sliderDragValue = newValue
+                    val targetMs = (newValue * durationForCalc).roundToLong()
+                    onSeek(targetMs)
                 },
-                thumbColor = thumbColor,
-                activeTrackColor = activeTrackColor,
-                inactiveTrackColor = inactiveTrackColor,
-                interactionSource = interactionSource,
-                isPlaying = shouldAnimateWavyProgress
+                activeColor = activeTrackColor,
+                inactiveColor = inactiveTrackColor,
+                energy = if (shouldAnimateWavyProgress) 0.8f else 0f,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
             )
 
             // Isolated Time Labels
@@ -1444,24 +1467,51 @@ private fun EfficientTimeLabels(
         }
 
         if (!audioMetaLabel.isNullOrBlank()) {
-            Surface(
+            val isHiRes = (duration > 0) && (audioMetaLabel.contains("kHz") && (audioMetaLabel.split("kHz")[0].trim().toDoubleOrNull() ?: 0.0) > 48.0)
+            val isLossless = audioMetaLabel.contains("FLAC") || audioMetaLabel.contains("WAV") || audioMetaLabel.contains("ALAC") ||
+                             (audioMetaLabel.contains("kbps") && (audioMetaLabel.split("kbps")[0].trim().toIntOrNull() ?: 0) >= 1411)
+
+            Row(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .padding(horizontal = 58.dp),
-                shape = RoundedCornerShape(999.dp),
-                color = textColor.copy(alpha = 0.14f),
-                contentColor = textColor.copy(alpha = 0.96f)
+                    .padding(horizontal = 48.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = audioMetaLabel,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 11.sp
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
-                )
+                if (isHiRes || isLossless) {
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = if (isHiRes) Color(0xFF00E5FF) else Color(0xFFBB86FC),
+                        contentColor = Color.Black
+                    ) {
+                        Text(
+                            text = if (isHiRes) "HI-RES" else "LOSSLESS",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Black,
+                                fontSize = 9.sp,
+                                letterSpacing = 0.5.sp
+                            ),
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                        )
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(999.dp),
+                    color = textColor.copy(alpha = 0.14f),
+                    contentColor = textColor.copy(alpha = 0.96f)
+                ) {
+                    Text(
+                        text = audioMetaLabel,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 11.sp
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                    )
+                }
             }
         }
     }

@@ -42,22 +42,23 @@ The **Void-Iconic Edition** represents a complete technical and visual overhaul 
 The core of Void-Iconic is the **Titan Engine**, designed for absolute sonic transparency and precision.
 - **32-Band Parametric EQ:** Total control over frequency, gain, and Q-factor.
 - **32-bit Internal Processing:** Minimal quantization error and maximum headroom.
-- **Bit-Perfect Mode:** Bypasses Android's system resampler for native DAC playback (FLAC, DSD, MQA).
-- **Pro Gain Management:** ReplayGain integration and a ±30dB Pre-Amp stage.
-- **Per-Device DSP Profiles:** Automatic preset switching based on Bluetooth MAC or wired ID.
+- **ReplayGain & Pre-Amp:** Integrated Track/Album mode with ±30dB Pre-Amp stage.
+- **Peak Limiter:** Prevents digital clipping at the final DSP stage.
+- **Per-Device DSP Profiles:** Automatic preset switching based on connection ID.
 
 ### 2. Void-Intelligence (Module II)
 Advanced AI integration powered by Gemini 2.0 that moves beyond simple playback into autonomous curation.
 - **AI Magic Wand Interface:** Natural language processing for complex queue and playlist operations.
 - **Autonomous Metadata Engine:** Background workers for 4K album art and synchronized lyrics.
-- **Pixel Wrapped:** On-device analytics engine with listening heatmaps and shareable cards.
-- **Smart Search:** Full-text search (FTS5) across lyrics, bitrate, and custom tags.
+- **Smart Search (FTS4/5):** Lightning-fast indexing across lyrics, bitrate, and sample rate.
+- **Pixel Wrapped:** On-device analytics engine with listening heatmaps.
 
 ### 3. Iconic Visual Identity (Module III)
 A signature aesthetic that matches the technical excellence of the engine.
-- **Void-Neon Theme:** True AMOLED blacks with high-contrast neon accents.
+- **Void-Neon Theme:** True AMOLED blacks with high-contrast neon accents (Cyan, Magenta, Lime).
 - **Glassmorphism Engine:** GPU-optimized real-time blur for an immersive "Now Playing" experience.
-- **Reactive Waveform Scrubber:** Frequency-reactive visual seeking powered by Amplituda.
+- **Reactive Waveform Scrubber:** Neon-reactive visual seeking powered by Amplituda.
+- **Audio Fidelity Indicator:** Real-time "Hi-Res" and "Lossless" badges.
 
 ---
 
@@ -66,37 +67,40 @@ A signature aesthetic that matches the technical excellence of the engine.
 | Feature | Standard Edition | Void-Iconic Edition |
 |---------|------------------|---------------------|
 | **Audio Processing** | 10-Band EQ | 32-Band Parametric EQ |
-| **Bit Depth** | 16/24-bit | 32-bit Internal Processing |
-| **DAC Support** | Standard Android | Bit-Perfect Exclusive Mode |
+| **Bit Depth** | 16/24-bit | 32-bit Float Pipeline |
+| **Peak Limiter** | No | Yes (Safe Gain Stage) |
 | **AI Integration** | Basic Daily Mix | Gemini 2.0 Magic Wand |
 | **Metadata** | Manual/Auto | Autonomous Background Engine |
-| **Theming** | Material You | Void-Neon Signature Theme |
-| **Analytics** | Basic Stats | Pixel Wrapped Heatmaps |
+| **Search** | Basic Title/Artist | FTS4/5 (Lyrics/Bitrate/Tags) |
+| **Visuals** | Material You | Glassmorphism + Neon |
 
 ---
 
 ## 🛠️ Roadmap: The Evolution
 
-### Phase I: Identity Foundation (Current)
+### Phase I: Identity Foundation (Complete)
 - [x] VoidX3D Vision Integration
 - [x] About Screen & Documentation Overhaul
 - [x] Void-Iconic Branding Establishment
 
-### Phase II: Titan Engine
-- [ ] 32-Band Parametric EQ Core
-- [ ] 32-bit Audio Path Implementation
-- [ ] Bit-Perfect USB DAC Mode
-- [ ] Per-Device DSP Profiles & ReplayGain
+### Phase II: Titan Engine (Complete)
+- [x] 32-Band Parametric EQ Core
+- [x] 32-bit Internal Audio Pipeline
+- [x] ReplayGain & ±30dB Pre-Amp Logic
+- [x] Safe Peak Limiter Stage
 
-### Phase III: Intelligence Layer
-- [ ] Gemini 2.0 Magic Wand Interface
-- [ ] WorkManager AI Metadata Workers (Deezer/LRCLIB)
-- [ ] Smart Search (FTS5) & Listening Heatmaps
+### Phase III: Intelligence Layer (Complete)
+- [x] Gemini 2.0 Magic Wand Connector
+- [x] Autonomous Metadata AI Workers
+- [x] Smart Search (FTS4/5 Indexing)
+- [x] Pixel Wrapped Analytics Core
 
-### Phase IV: Visual & Experience Layer
-- [ ] Glassmorphism Engine & AMOLED Protection
-- [ ] Reactive Waveform Scrubber
-- [ ] Void-Neon Theme Presets & Studio Mode
+### Phase IV: Visual & Experience Layer (In Progress)
+- [x] GPU-Optimized Glassmorphism Engine
+- [x] Reactive Waveform Scrubber (Amplituda)
+- [x] Audio Fidelity Badge (Hi-Res/Lossless)
+- [x] Lyric Interface Lock
+- [ ] Spring-Loaded Reactive EQ Visualizer
 
 ---
 

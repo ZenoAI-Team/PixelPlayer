@@ -68,6 +68,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.ColorFilter
@@ -100,7 +101,6 @@ import coil.request.ImageRequest
 import coil.size.Size
 import com.theveloper.pixelplay.R
 import com.theveloper.pixelplay.data.github.GitHubContributorService
-import com.theveloper.pixelplay.presentation.components.CollapsibleCommonTopBar
 import com.theveloper.pixelplay.presentation.components.MiniPlayerHeight
 import com.theveloper.pixelplay.presentation.components.SmartImage
 import com.theveloper.pixelplay.presentation.components.brickbreaker.BrickBreakerOverlay
@@ -127,7 +127,7 @@ private val LeadArchitect = Contributor(
     id = "voidx3d",
     displayName = "VoidX3D",
     role = "Lead Architect & Project Visionary",
-    detail = "Pioneering the Void-Iconic evolution of PixelPlayer.",
+    detail = "Pioneering the Void-Iconic evolution: merging audiophile DSP with AI automation.",
     avatarUrl = null,
     iconRes = R.drawable.round_developer_board_24,
     githubUrl = "https://github.com/voidx3d",
@@ -182,7 +182,69 @@ private fun normalizeHandle(handle: String): String {
     return handle.trim().removePrefix("@").lowercase()
 }
 
-// AboutTopBar removed, replaced by CollapsibleCommonTopBar
+@Composable
+private fun AboutTopBar(
+    collapseFraction: Float,
+    headerHeight: Dp,
+    onBackPressed: () -> Unit,
+) {
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val titleScale = lerpFloat(1.2f, 0.85f, collapseFraction)
+    val titlePaddingStart = lerpDp(32.dp, 58.dp, collapseFraction)
+    val titleVerticalBias = lerpFloat(1f, -1f, collapseFraction)
+    val animatedTitleAlignment = BiasAlignment(horizontalBias = -1f, verticalBias = titleVerticalBias)
+    val titleContainerHeight = lerpDp(88.dp, 56.dp, collapseFraction)
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(headerHeight)
+            .background(surfaceColor.copy(alpha = collapseFraction)),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding(),
+        ) {
+            FilledIconButton(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 12.dp, top = 4.dp),
+                onClick = onBackPressed,
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                ),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.rounded_arrow_back_24),
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(animatedTitleAlignment)
+                    .height(titleContainerHeight)
+                    .fillMaxWidth()
+                    .padding(start = titlePaddingStart, end = 24.dp),
+            ) {
+                Text(
+                    text = "About",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .graphicsLayer {
+                            scaleX = titleScale
+                            scaleY = titleScale
+                        },
+                )
+            }
+        }
+    }
+}
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @Suppress("UNUSED_PARAMETER")
@@ -371,7 +433,7 @@ fun AboutScreen(
         LazyColumn(
             state = lazyListState,
             contentPadding = PaddingValues(
-                top = currentTopBarHeightDp + 8.dp,
+                top = currentTopBarHeightDp,
                 bottom = MiniPlayerHeight +
                     WindowInsets.navigationBars
                         .asPaddingValues()
@@ -556,13 +618,10 @@ fun AboutScreen(
             }
         }
 
-        CollapsibleCommonTopBar(
-            title = "About",
+        AboutTopBar(
             collapseFraction = collapseFraction,
             headerHeight = currentTopBarHeightDp,
-            onBackClick = onNavigationIconClick,
-            expandedTitleStartPadding = 20.dp,
-            collapsedTitleStartPadding = 68.dp
+            onBackPressed = onNavigationIconClick,
         )
 
         if (showBrickBreaker) {
@@ -634,12 +693,13 @@ private fun AboutHeroCard(
                         Text(
                             text = "PixelPlayer: Void-Iconic",
                             style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Black,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
+                            color = Color(0xFF00E5FF) // Cyan Neon
                         )
                         Text(
-                            text = "The definitive AI-augmented high-fidelity music platform.",
+                            text = "The definitive high-fidelity, AI-augmented music ecosystem.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 2,

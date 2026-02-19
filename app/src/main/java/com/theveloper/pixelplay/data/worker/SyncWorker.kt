@@ -31,6 +31,7 @@ import com.theveloper.pixelplay.utils.AudioMetaUtils.getAudioMetadata
 import com.theveloper.pixelplay.utils.DirectoryRuleResolver
 import com.theveloper.pixelplay.utils.normalizeMetadataTextOrEmpty
 import com.theveloper.pixelplay.utils.splitArtistsByDelimiters
+import linc.com.amplituda.Amplituda
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.io.File
@@ -66,7 +67,8 @@ constructor(
         private val userPreferencesRepository: UserPreferencesRepository,
         private val lyricsRepository: LyricsRepository,
         private val telegramDao: TelegramDao,
-        private val neteaseDao: NeteaseDao
+        private val neteaseDao: NeteaseDao,
+        private val waveformDao: com.theveloper.pixelplay.data.database.WaveformDao
 ) : CoroutineWorker(appContext, workerParams) {
 
     private val contentResolver: ContentResolver = appContext.contentResolver
@@ -392,6 +394,9 @@ constructor(
                         // Sync cloud songs (Telegram + Netease)
                         syncTelegramData()
                         syncNeteaseData()
+
+                        // --- WAVEFORM GENERATION PHASE ---
+                        generateWaveforms(correctedSongs)
 
                         // Recalculate total after cloud sync
                         val finalTotalSongs = musicDao.getSongCount().first()
@@ -1681,5 +1686,46 @@ constructor(
 
     private fun toUnifiedNeteaseArtistId(artistName: String): Long {
         return -(NETEASE_ARTIST_ID_OFFSET + artistName.lowercase().hashCode().toLong().absoluteValue)
+    }
+
+    private suspend fun generateWaveforms(songs: List<SongEntity>) {
+        if (songs.isEmpty()) return
+
+        Log.i(TAG, "Starting waveform generation for ${songs.size} songs...")
+        val amplituda = linc.com.amplituda.Amplituda(applicationContext)
+        val processedCount = AtomicInteger(0)
+        val total = songs.size
+
+        songs.forEach { song ->
+            if (song.filePath.isNotEmpty() && File(song.filePath).exists()) {
+                try {
+                    // Check if already cached
+                    if (waveformDao.getWaveformBySongId(song.id) == null) {
+                        val result = amplituda.processAudio(File(song.filePath)).get()
+                        val amplitudes = result.amplitudesAsList().map { it.toFloat() }.toFloatArray()
+
+                        waveformDao.insertWaveform(
+                            com.theveloper.pixelplay.data.database.WaveformEntity(
+                                songId = song.id,
+                                amplitudes = amplitudes
+                            )
+                        )
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to generate waveform for ${song.title}: ${e.message}")
+                }
+            }
+            val current = processedCount.incrementAndGet()
+            if (current % 10 == 0 || current == total) {
+                setProgress(
+                    workDataOf(
+                        PROGRESS_CURRENT to current,
+                        PROGRESS_TOTAL to total,
+                        PROGRESS_PHASE to SyncProgress.SyncPhase.PROCESSING_FILES.ordinal // Reusing phase for simplicity
+                    )
+                )
+            }
+        }
+        Log.i(TAG, "Waveform generation completed.")
     }
 }

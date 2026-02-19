@@ -119,9 +119,12 @@ object AppModule {
             PixelPlayDatabase.MIGRATION_19_20,
             PixelPlayDatabase.MIGRATION_20_21,
             PixelPlayDatabase.MIGRATION_21_22,
-            PixelPlayDatabase.MIGRATION_22_23
+            PixelPlayDatabase.MIGRATION_22_23,
+            PixelPlayDatabase.MIGRATION_23_24,
+            PixelPlayDatabase.MIGRATION_24_25,
+            PixelPlayDatabase.MIGRATION_25_26
         )
-            .fallbackToDestructiveMigration(dropAllTables = true)
+            .fallbackToDestructiveMigration()
             .build()
     }
 
@@ -165,6 +168,12 @@ object AppModule {
     @Provides
     fun provideLyricsDao(database: PixelPlayDatabase): LyricsDao {
         return database.lyricsDao()
+    }
+
+    @Singleton
+    @Provides
+    fun provideWaveformDao(database: PixelPlayDatabase): com.theveloper.pixelplay.data.database.WaveformDao {
+        return database.waveformDao()
     }
 
     @Singleton
@@ -261,6 +270,8 @@ object AppModule {
         telegramRepository: com.theveloper.pixelplay.data.telegram.TelegramRepository,
         songRepository: SongRepository,
         favoritesDao: FavoritesDao,
+        engagementDao: EngagementDao,
+        waveformDao: com.theveloper.pixelplay.data.database.WaveformDao,
         artistImageRepository: ArtistImageRepository,
         folderTreeBuilder: FolderTreeBuilder
     ): MusicRepository {
@@ -275,6 +286,8 @@ object AppModule {
             telegramRepository = telegramRepository,
             songRepository = songRepository,
             favoritesDao = favoritesDao,
+            engagementDao = engagementDao,
+            waveformDao = waveformDao,
             artistImageRepository = artistImageRepository,
             folderTreeBuilder = folderTreeBuilder
         )
@@ -400,7 +413,7 @@ object AppModule {
                 okhttp3.ConnectionSpec.CLEARTEXT
             ))
             .connectTimeout(8, java.util.concurrent.TimeUnit.SECONDS)
-            .readTimeout(8, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
             .writeTimeout(8, java.util.concurrent.TimeUnit.SECONDS)
             // Enable built-in retry on connection failure
             .retryOnConnectionFailure(true)
@@ -412,6 +425,25 @@ object AppModule {
                     .header("Accept", "application/json")
                     .build()
                 chain.proceed(requestWithHeaders)
+            }
+            // Retry interceptor for "unexpected end of stream" errors
+            // retryOnConnectionFailure only retries connection setup, NOT stream read errors
+            .addInterceptor { chain ->
+                val request = chain.request()
+                var lastException: java.io.IOException? = null
+                for (attempt in 0..2) {
+                    try {
+                        if (attempt > 0) {
+                            Thread.sleep(500L * attempt) // backoff: 500ms, 1000ms
+                            android.util.Log.d("OkHttp-Retry", "Retry attempt $attempt for ${request.url}")
+                        }
+                        return@addInterceptor chain.proceed(request)
+                    } catch (e: java.io.IOException) {
+                        lastException = e
+                        android.util.Log.w("OkHttp-Retry", "Attempt $attempt failed: ${e.message}")
+                    }
+                }
+                throw lastException!!
             }
             .addInterceptor(loggingInterceptor)
             .build()

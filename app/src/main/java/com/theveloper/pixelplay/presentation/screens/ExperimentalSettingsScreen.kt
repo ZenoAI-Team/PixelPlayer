@@ -71,7 +71,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
-import com.theveloper.pixelplay.presentation.components.CollapsibleCommonTopBar
 import com.theveloper.pixelplay.presentation.components.MiniPlayerHeight
 import com.theveloper.pixelplay.presentation.viewmodel.PlayerSheetState
 import com.theveloper.pixelplay.presentation.viewmodel.PlayerViewModel
@@ -180,7 +179,7 @@ fun ExperimentalSettingsScreen(
 
         LazyColumn(
             state = lazyListState,
-            contentPadding = PaddingValues(top = currentTopBarHeightDp + 8.dp),
+            contentPadding = PaddingValues(top = currentTopBarHeightDp),
             modifier = Modifier.fillMaxSize()
         ) {
             item(key = "player_ui_tweaks_section") {
@@ -223,6 +222,20 @@ fun ExperimentalSettingsScreen(
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Rounded.ViewCarousel,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.secondary
+                                    )
+                                }
+                            )
+
+                            SwitchSettingItem(
+                                title = "Animated Lyrics (High-end devices)",
+                                subtitle = "Uses spring animations and visual effects for lyrics. May cause frame drops on low-end devices.",
+                                checked = uiState.useAnimatedLyrics,
+                                onCheckedChange = settingsViewModel::setUseAnimatedLyrics,
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Rounded.MusicNote,
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.secondary
                                     )
@@ -700,11 +713,11 @@ fun ExperimentalSettingsScreen(
             }
         }
 
-        CollapsibleCommonTopBar(
-            title = "Experimental",
+        SettingsTopBar(
             collapseFraction = collapseFraction,
             headerHeight = currentTopBarHeightDp,
-            onBackClick = onNavigationIconClick
+            onBackPressed = onNavigationIconClick,
+            title = "Experimental"
         )
     }
 }

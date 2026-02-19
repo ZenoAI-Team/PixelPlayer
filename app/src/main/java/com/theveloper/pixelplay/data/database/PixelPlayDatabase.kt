@@ -9,7 +9,6 @@ import androidx.sqlite.db.SupportSQLiteDatabase
     entities = [
         AlbumArtThemeEntity::class,
         SearchHistoryEntity::class,
-        SongEntity::class,
         AlbumEntity::class,
         ArtistEntity::class,
         TransitionRuleEntity::class,
@@ -22,12 +21,17 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         NeteaseSongEntity::class,
         NeteasePlaylistEntity::class,
         GDriveSongEntity::class,
-        GDriveFolderEntity::class
+        GDriveFolderEntity::class,
+        SongEntity::class,
+        SongFtsEntity::class,
+        PlayEventEntity::class,
+        WaveformEntity::class
     ],
-    version = 23, // Titan Engine: Added ReplayGain columns
+    version = 26, // Void-Iconic: Added Waveforms cache
 
     exportSchema = false
 )
+@androidx.room.TypeConverters(WaveformConverters::class)
 abstract class PixelPlayDatabase : RoomDatabase() {
     abstract fun albumArtThemeDao(): AlbumArtThemeDao
     abstract fun searchHistoryDao(): SearchHistoryDao
@@ -39,6 +43,7 @@ abstract class PixelPlayDatabase : RoomDatabase() {
     abstract fun lyricsDao(): LyricsDao
     abstract fun neteaseDao(): NeteaseDao
     abstract fun gdriveDao(): GDriveDao
+    abstract fun waveformDao(): WaveformDao
 
     companion object {
         // Gap-bridging no-op migrations for missing version ranges.
@@ -442,6 +447,53 @@ abstract class PixelPlayDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE songs ADD COLUMN track_peak REAL")
                 db.execSQL("ALTER TABLE songs ADD COLUMN album_gain REAL")
                 db.execSQL("ALTER TABLE songs ADD COLUMN album_peak REAL")
+            }
+        }
+
+        val MIGRATION_23_24 = object : Migration(23, 24) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE VIRTUAL TABLE IF NOT EXISTS songs_fts USING fts4(
+                        title,
+                        artist_name,
+                        album_name,
+                        genre,
+                        lyrics,
+                        content='songs'
+                    )
+                """.trimIndent())
+                db.execSQL("""
+                    INSERT INTO songs_fts(rowid, title, artist_name, album_name, genre, lyrics)
+                    SELECT id, title, artist_name, album_name, genre, lyrics FROM songs
+                """.trimIndent())
+            }
+        }
+
+        val MIGRATION_24_25 = object : Migration(24, 25) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS play_events (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        song_id INTEGER NOT NULL,
+                        timestamp INTEGER NOT NULL,
+                        duration_ms INTEGER NOT NULL,
+                        is_skipped INTEGER NOT NULL DEFAULT 0,
+                        FOREIGN KEY(song_id) REFERENCES songs(id) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_play_events_song_id ON play_events(song_id)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_play_events_timestamp ON play_events(timestamp)")
+            }
+        }
+
+        val MIGRATION_25_26 = object : Migration(25, 26) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS waveforms (
+                        song_id INTEGER NOT NULL PRIMARY KEY,
+                        amplitudes BLOB NOT NULL
+                    )
+                """.trimIndent())
             }
         }
     }

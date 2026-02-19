@@ -58,5 +58,12 @@ interface EngagementDao {
      * Get top songs by play count for quick access.
      */
     @Query("SELECT * FROM song_engagements ORDER BY play_count DESC LIMIT :limit")
-    suspend fun getTopPlayedSongs(limit: Int): List<SongEngagementEntity>
+    suspend fun getTopSongs(limit: Int): List<SongEngagementEntity>
+
+    // Individual Play Events (Analytics)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPlayEvent(event: PlayEventEntity)
+
+    @Query("SELECT * FROM play_events WHERE timestamp BETWEEN :startTime AND :endTime ORDER BY timestamp DESC")
+    suspend fun getPlayEvents(startTime: Long, endTime: Long): List<PlayEventEntity>
 }

@@ -4,7 +4,7 @@ import android.content.Context
 import com.theveloper.pixelplay.R
 import com.theveloper.pixelplay.data.DailyMixManager
 import com.theveloper.pixelplay.data.ai.AiMetadataGenerator
-import com.theveloper.pixelplay.data.ai.AiPlaylistGenerator
+import com.theveloper.pixelplay.data.ai.MagicWandEngine
 import com.theveloper.pixelplay.data.ai.SongMetadata
 import com.theveloper.pixelplay.data.preferences.UserPreferencesRepository
 import com.theveloper.pixelplay.data.model.Song
@@ -24,7 +24,7 @@ import javax.inject.Singleton
 @Singleton
 class AiStateHolder @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val aiPlaylistGenerator: AiPlaylistGenerator,
+    private val magicWandEngine: MagicWandEngine,
     private val aiMetadataGenerator: AiMetadataGenerator,
     private val dailyMixManager: DailyMixManager,
     private val userPreferencesRepository: UserPreferencesRepository,
@@ -120,7 +120,7 @@ class AiStateHolder @Inject constructor(
                     limit = 120
                 )
 
-                val result = aiPlaylistGenerator.generate(
+                val result = magicWandEngine.generate(
                     userPrompt = prompt,
                     allSongs = allSongs,
                     minLength = minLength,
@@ -193,7 +193,7 @@ class AiStateHolder @Inject constructor(
                     limit = 100
                 )
 
-                val result = aiPlaylistGenerator.generate(
+                val result = magicWandEngine.generate(
                     userPrompt = prompt,
                     allSongs = allSongs,
                     minLength = minLength,

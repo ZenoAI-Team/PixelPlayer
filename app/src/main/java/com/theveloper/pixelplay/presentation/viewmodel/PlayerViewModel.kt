@@ -98,6 +98,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -312,6 +313,17 @@ class PlayerViewModel @Inject constructor(
             else musicRepository.getArtistsForSong(idLong)
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val currentWaveform: StateFlow<FloatArray> = stablePlayerState
+        .map { it.currentSong?.id }
+        .distinctUntilChanged()
+        .flatMapLatest { songId ->
+            val idLong = songId?.toLongOrNull()
+            if (idLong == null) flowOf(floatArrayOf())
+            else flow { emit(musicRepository.getWaveform(idLong) ?: floatArrayOf()) }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), floatArrayOf())
 
     private val _sheetState = MutableStateFlow(PlayerSheetState.COLLAPSED)
     val sheetState: StateFlow<PlayerSheetState> = _sheetState.asStateFlow()
