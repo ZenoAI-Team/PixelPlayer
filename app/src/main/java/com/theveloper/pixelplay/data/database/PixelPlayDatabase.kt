@@ -28,6 +28,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         WaveformEntity::class
     ],
     version = 26, // Void-Iconic: Added Waveforms cache
+    version = 23, // Incremented for artist custom image support
 
     exportSchema = false
 )
@@ -494,6 +495,14 @@ abstract class PixelPlayDatabase : RoomDatabase() {
                         amplitudes BLOB NOT NULL
                     )
                 """.trimIndent())
+        /**
+         * Add custom_image_uri column to artists table.
+         * Allows users to associate a custom image with each artist.
+         * Nullable with DEFAULT NULL so this migration is safe and additive.
+         */
+        val MIGRATION_22_23 = object : Migration(22, 23) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE artists ADD COLUMN custom_image_uri TEXT DEFAULT NULL")
             }
         }
     }
