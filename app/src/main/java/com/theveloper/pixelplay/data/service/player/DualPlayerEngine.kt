@@ -122,6 +122,13 @@ class DualPlayerEngine @Inject constructor(
     fun getTitanProcessorA() = titanProcessorA
     fun getTitanProcessorB() = titanProcessorB
 
+    /**
+     * Returns the combined peak amplitude from both processors.
+     */
+    fun getPeakAmplitude(): Float {
+        return maxOf(titanProcessorA.getPeakAmplitude(), titanProcessorB.getPeakAmplitude())
+    }
+
     private val masterPlayerListener = object : Player.Listener {
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
             if (playWhenReady) {
@@ -160,16 +167,20 @@ class DualPlayerEngine @Inject constructor(
                 (playerA as? ExoPlayer)?.setWakeMode(C.WAKE_MODE_LOCAL)
             }
 
-            // --- Pre-Resolve Next/Prev Tracks para Performance ---
+            // --- Pre-Resolve & Pre-Buffer Next Tracks para Performance ---
             try {
                 val currentIndex = playerA.currentMediaItemIndex
                 if (currentIndex != C.INDEX_UNSET) {
-                    // 1. Pre-resolver SIGUIENTE
+                    // 1. Pre-resolver y Pre-cargar SIGUIENTE
                     if (currentIndex + 1 < playerA.mediaItemCount) {
                         val nextItem = playerA.getMediaItemAt(currentIndex + 1)
                         val nextUri = nextItem.localConfiguration?.uri
                         if (nextUri?.scheme == "telegram") {
                             telegramRepository.preResolveTelegramUri(nextUri.toString())
+                        }
+                        // Pre-buffering en Player B para transición instantánea
+                        if (!transitionRunning) {
+                            prepareNext(nextItem)
                         }
                     }
                     // 2. Pre-resolver ANTERIOR (para rapidez al retroceder)
@@ -438,15 +449,16 @@ class DualPlayerEngine @Inject constructor(
         val dataSourceFactory = DefaultDataSource.Factory(context)
         val resolvingFactory = ResolvingDataSource.Factory(dataSourceFactory, resolver)
 
-        // Tune LoadControl to prevent "loop of death" (underrun -> start -> underrun)
-        // Increase bufferForPlaybackMs to wait for more data before starting/resuming.
+        // Titan-Elite: Hyper-Optimized LoadControl for Instant-Action
+        // Reduced buffer for playback start to 500ms for zero-latency response.
         val loadControl = androidx.media3.exoplayer.DefaultLoadControl.Builder()
             .setBufferDurationsMs(
-                30_000, // Min buffer 30s
-                60_000, // Max buffer 60s
-                5_000,  // Buffer for playback start (Increased from 2.5s for stability)
-                5_000   // Buffer for rebuffer (Increased to 5s to stop rapid cycling)
+                32_000, // Min buffer 32s
+                64_000, // Max buffer 64s
+                500,    // Instant Start: 500ms (Reduced from 5s)
+                1_000   // Fast Rebuffer: 1s (Reduced from 5s)
             )
+            .setBackBuffer(10_000, true) // Keep 10s of back buffer for instant seeking backwards
             .build()
 
         return ExoPlayer.Builder(context, renderersFactory)

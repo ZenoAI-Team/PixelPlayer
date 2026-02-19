@@ -2655,7 +2655,7 @@ fun LibraryAlbumsTab(
                             contentPadding = PaddingValues(bottom = bottomBarHeight + MiniPlayerHeight + ListExtraBottomGap + 4.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            items(albums, key = { it.id }) { album ->
+                            items(albums, key = { it.id }, contentType = { "album" }) { album ->
                                 val albumSpecificColorSchemeFlow =
                                     playerViewModel.themeStateHolder.getAlbumColorSchemeFlow(album.albumArtUriString ?: "")
                                 val rememberedOnClick = remember(album.id) { { onAlbumClick(album.id) } }
@@ -2699,7 +2699,7 @@ fun LibraryAlbumsTab(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
 
-                            items(albums, key = { it.id }) { album ->
+                            items(albums, key = { it.id }, contentType = { "album" }) { album ->
                                 val albumSpecificColorSchemeFlow =
                                     playerViewModel.themeStateHolder.getAlbumColorSchemeFlow(album.albumArtUriString ?: "")
                                 val rememberedOnClick = remember(album.id) { { onAlbumClick(album.id) } }
@@ -2966,7 +2966,7 @@ fun LibraryArtistsTab(
 //                        item(key = "artists_top_spacer") {
 //                            Spacer(Modifier.height(4.dp))
 //                        }
-                        items(artists, key = { it.id }) { artist ->
+                        items(artists, key = { it.id }, contentType = { "artist" }) { artist ->
                             val rememberedOnClick = remember(artist) { { onArtistClick(artist.id) } }
                             ArtistListItem(artist = artist, onClick = rememberedOnClick)
                         }

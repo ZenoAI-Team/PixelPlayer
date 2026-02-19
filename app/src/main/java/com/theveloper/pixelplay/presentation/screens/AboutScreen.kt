@@ -127,7 +127,7 @@ private val LeadArchitect = Contributor(
     id = "voidx3d",
     displayName = "VoidX3D",
     role = "Lead Architect & Project Visionary",
-    detail = "Pioneering the Void-Iconic evolution: merging audiophile DSP with AI automation.",
+    detail = "Pioneering the Titan-Elite evolution: merging audiophile DSP with AI automation.",
     avatarUrl = null,
     iconRes = R.drawable.round_developer_board_24,
     githubUrl = "https://github.com/voidx3d",
@@ -137,7 +137,7 @@ private val Creator = Contributor(
     id = "theovilardo",
     displayName = "Theo Vilardo",
     role = "Creator and Original Maintainer",
-    detail = "The foundation of PixelPlayer was built here.",
+    detail = "The foundation of VoidPlayer was built here.",
     avatarUrl = "https://avatars.githubusercontent.com/u/26845343?v=4",
     iconRes = R.drawable.round_developer_board_24,
     githubUrl = "https://github.com/theovilardo",
@@ -167,7 +167,7 @@ private val PinnedCommunityMembers = listOf(
         id = "colbycabrera",
         displayName = "@ColbyCabrera",
         role = "Early contributor",
-        detail = "Helped shape PixelPlayer in the first stages of the app.",
+        detail = "Helped shape VoidPlayer in the first stages of the app.",
         badge = "Early Support",
         iconRes = R.drawable.round_newspaper_24,
         githubUrl = "https://github.com/ColbyCabrera",
@@ -504,7 +504,7 @@ fun AboutScreen(
             item(key = "maintainer_title") {
                 AboutSectionHeader(
                     title = "Project Leadership",
-                    subtitle = "The visionaries behind the Void-Iconic edition.",
+                    subtitle = "The visionaries behind the Titan-Elite edition.",
                     modifier = Modifier.padding(top = 24.dp),
                 )
             }
@@ -691,7 +691,7 @@ private fun AboutHeroCard(
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
                         Text(
-                            text = "PixelPlayer: Void-Iconic",
+                            text = "VoidPlayer: Titan-Elite",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Black,
                             maxLines = 1,
@@ -724,7 +724,7 @@ private fun AboutHeroCard(
                         },
                 ) {
                     Text(
-                        text = "Version v$versionName (Titan)",
+                        text = "Version v1.0 (Titan-Elite)",
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onTertiaryContainer,

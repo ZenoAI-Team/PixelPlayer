@@ -50,6 +50,7 @@ import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
@@ -477,18 +478,13 @@ fun LyricsSheet(
                             .background(
                                 color = backgroundColor,
                                 shape = CircleShape
-//                                shape = RoundedCornerShape(
-//                                    topStart = 16.dp,
-//                                    topEnd = 50.dp,
-//                                    bottomEnd = 50.dp,
-//                                    bottomStart = 16.dp
-//                                )
                             )
                             .wrapContentWidth()
                             .animateContentSize(), // Animate width changes
                         backgroundColor = backgroundColor, // Distinct solid background
                         contentColor = contentColor,
-                        isPlaying = isPlaying
+                        isPlaying = isPlaying,
+                        isLyricsInterfaceLocked = isLyricsInterfaceLocked
                     )
                 }
 
@@ -664,7 +660,8 @@ fun LyricsSheet(
                         backgroundColor = backgroundColor,
                         accentColor = accentColor,
                         onAccentColor = onAccentColor,
-                        onBackgroundColor = onBackgroundColor
+                        onBackgroundColor = onBackgroundColor,
+                        isLocked = isLyricsInterfaceLocked
                     )
                 }
 
@@ -1345,7 +1342,8 @@ private fun LyricsTrackInfo(
     modifier: Modifier = Modifier,
     backgroundColor: Color,
     contentColor: Color,
-    isPlaying: Boolean
+    isPlaying: Boolean,
+    isLyricsInterfaceLocked: Boolean = false
 ) {
     if (song == null) return
 
@@ -1435,6 +1433,15 @@ private fun LyricsTrackInfo(
                 ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        if (isLyricsInterfaceLocked) {
+            Icon(
+                imageVector = Icons.Rounded.Lock,
+                contentDescription = "Lyrics Interface Locked",
+                tint = contentColor.copy(alpha = 0.5f),
+                modifier = Modifier.size(16.dp)
             )
         }
 

@@ -311,9 +311,9 @@ fun EqualizerScreen(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             item(key = "eq_visualizer") {
-                val stablePlayerState by playerViewModel.stablePlayerState.collectAsState()
+                val amplitude by playerViewModel.realTimePeakAmplitude.collectAsState(initial = 0f)
                 SpringLoadedEqVisualizer(
-                    isPlaying = stablePlayerState.isPlaying,
+                    amplitude = amplitude,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(120.dp)
@@ -1886,14 +1886,16 @@ private fun HybridFrequencyResponseGraph(
 
 @Composable
 fun SpringLoadedEqVisualizer(
-    isPlaying: Boolean,
+    amplitude: Float,
     modifier: Modifier = Modifier
 ) {
     val barCount = 32
-    val infiniteTransition = rememberInfiniteTransition(label = "eq_visualizer")
 
     val primaryColor = MaterialTheme.colorScheme.primary
     val secondaryColor = MaterialTheme.colorScheme.secondary
+
+    // Random variation for each bar to simulate frequency bands
+    val barMultipliers = remember { List(barCount) { 0.4f + (Math.random().toFloat() * 0.6f) } }
 
     Row(
         modifier = modifier,
@@ -1901,36 +1903,27 @@ fun SpringLoadedEqVisualizer(
         verticalAlignment = Alignment.Bottom
     ) {
         repeat(barCount) { index ->
-            val delay = index * 50
-            val duration = 400 + (index % 5) * 100
-
-            val targetScale = if (isPlaying) {
-                infiniteTransition.animateFloat(
-                    initialValue = 0.1f,
-                    targetValue = 0.4f + (index % 7) * 0.1f,
-                    animationSpec = infiniteRepeatable(
-                        animation = tween(duration, delayMillis = delay, easing = FastOutSlowInEasing),
-                        repeatMode = RepeatMode.Reverse
-                    ),
-                    label = "bar_scale_$index"
-                ).value
-            } else {
-                0.1f
-            }
+            val targetScale = (amplitude * barMultipliers[index]).coerceIn(0.05f, 1f)
 
             val animatedHeight by animateFloatAsState(
                 targetValue = targetScale,
                 animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    dampingRatio = 0.6f, // Snappy but bouncy
                     stiffness = Spring.StiffnessLow
                 ),
                 label = "bar_height_$index"
             )
 
+            val glowAlpha = (animatedHeight * 0.6f).coerceIn(0f, 1f)
+
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight(animatedHeight)
+                    .graphicsLayer {
+                        // Neon Glow effect
+                        shadowElevation = animatedHeight * 8f
+                    }
                     .clip(RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
                     .background(
                         brush = Brush.verticalGradient(
