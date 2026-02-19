@@ -53,6 +53,9 @@ class TitanAudioProcessor : BaseAudioProcessor() {
     }
 
     override fun onConfigure(inputAudioFormat: AudioProcessor.AudioFormat): AudioProcessor.AudioFormat {
+        if (inputAudioFormat.encoding != C.ENCODING_PCM_FLOAT && inputAudioFormat.encoding != C.ENCODING_PCM_16BIT) {
+            throw AudioProcessor.UnhandledAudioFormatException(inputAudioFormat)
+        }
         // Request Float output from the previous processor/decoder to ensure high-fidelity chain.
         return AudioProcessor.AudioFormat(
             inputAudioFormat.sampleRate,
@@ -65,8 +68,10 @@ class TitanAudioProcessor : BaseAudioProcessor() {
         val remaining = inputBuffer.remaining()
         if (remaining == 0) return
 
-        // We expect FLOAT input because we requested it in onConfigure
-        val outputBuffer = replaceOutputBuffer(remaining)
+        val encoding = inputAudioFormat.encoding
+        val outputSize = if (encoding == C.ENCODING_PCM_FLOAT) remaining else remaining * 2
+
+        val outputBuffer = replaceOutputBuffer(outputSize)
         outputBuffer.order(ByteOrder.nativeOrder())
         inputBuffer.order(ByteOrder.nativeOrder())
 
@@ -77,7 +82,14 @@ class TitanAudioProcessor : BaseAudioProcessor() {
             for (c in 0 until channelCount) {
                 if (!inputBuffer.hasRemaining()) break
 
-                var sample = inputBuffer.float * totalGain
+                var sample = if (encoding == C.ENCODING_PCM_FLOAT) {
+                    inputBuffer.float
+                } else {
+                    // Convert 16-bit PCM to Float [-1.0, 1.0]
+                    inputBuffer.short / 32768.0f
+                }
+
+                sample *= totalGain
 
                 if (eqEnabled) {
                     // Apply EQ (mapping odd channels to Right and even to Left for basic stereo/multi-channel support)

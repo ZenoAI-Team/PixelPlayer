@@ -756,7 +756,7 @@ fun FullPlayerContent(
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.rounded_keyboard_arrow_down_24),
-                                    contentDescription = "Colapsar",
+                                    contentDescription = stringResource(R.string.collapse),
                                     tint = playerAccentColor
                                 )
                             }
@@ -911,7 +911,7 @@ fun FullPlayerContent(
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.rounded_queue_music_24),
-                                    contentDescription = "Song options",
+                                    contentDescription = stringResource(R.string.more_options),
                                     tint = playerAccentColor
                                 )
                             }
@@ -2122,7 +2122,7 @@ private fun BottomToggleRow(
                 inactiveContentColor = inactiveContentColor,
                 onClick = onShuffleToggle,
                 iconId = R.drawable.rounded_shuffle_24,
-                contentDesc = "Aleatorio"
+                    contentDesc = stringResource(R.string.shuffle)
             )
             val repeatActive = repeatMode != Player.REPEAT_MODE_OFF
             val repeatIcon = when (repeatMode) {
@@ -2140,7 +2140,7 @@ private fun BottomToggleRow(
                 inactiveContentColor = inactiveContentColor,
                 onClick = onRepeatToggle,
                 iconId = repeatIcon,
-                contentDesc = "Repetir"
+                contentDesc = stringResource(R.string.repeat)
             )
             ToggleSegmentButton(
                 modifier = commonModifier,
@@ -2152,7 +2152,7 @@ private fun BottomToggleRow(
                 inactiveContentColor = inactiveContentColor,
                 onClick = onFavoriteToggle,
                 iconId = R.drawable.round_favorite_24,
-                contentDesc = "Favorito"
+                contentDesc = stringResource(R.string.favorite)
             )
         }
     }

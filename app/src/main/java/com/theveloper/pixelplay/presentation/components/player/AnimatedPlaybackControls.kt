@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.theveloper.pixelplay.R
@@ -141,13 +142,14 @@ fun AnimatedPlaybackControls(
                     .background(colorPreviousButton)
                     .clickable {
                         lastClicked = PlaybackButtonType.PREVIOUS
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onPrevious()
                     },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     painter = painterResource(R.drawable.rounded_skip_previous_24),
-                    contentDescription = "Anterior",
+                    contentDescription = stringResource(R.string.previous_track),
                     tint = tintPreviousIcon,
                     modifier = Modifier.size(iconSize)
                 )
@@ -209,13 +211,14 @@ fun AnimatedPlaybackControls(
                     .background(colorNextButton)
                     .clickable {
                         lastClicked = PlaybackButtonType.NEXT
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onNext()
                     },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     painter = painterResource(R.drawable.rounded_skip_next_24),
-                    contentDescription = "Siguiente",
+                    contentDescription = stringResource(R.string.next_track),
                     tint = tintNextIcon,
                     modifier = Modifier.size(iconSize)
                 )
@@ -239,7 +242,7 @@ private fun MorphingPlayPauseIcon(
             painter = painterResource(
                 if (playing) R.drawable.rounded_pause_24 else R.drawable.rounded_play_arrow_24
             ),
-            contentDescription = if (playing) "Pausar" else "Reproducir",
+            contentDescription = if (playing) stringResource(R.string.pause_playback) else stringResource(R.string.play_playback),
             tint = tint,
             modifier = Modifier.size(size)
         )
