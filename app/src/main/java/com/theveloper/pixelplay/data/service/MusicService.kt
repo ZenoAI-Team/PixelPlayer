@@ -131,12 +131,17 @@ class MusicService : MediaSessionService() {
             val virtualizerStrength = userPreferencesRepository.virtualizerStrengthFlow.first()
             val loudnessEnabled = userPreferencesRepository.loudnessEnhancerEnabledFlow.first()
             val loudnessStrength = userPreferencesRepository.loudnessEnhancerStrengthFlow.first()
+            val titanEnabled = userPreferencesRepository.titanEqEnabledFlow.first()
+            val titanPreAmp = userPreferencesRepository.titanPreAmpFlow.first()
+            val titanReplayGainMode = userPreferencesRepository.titanReplayGainModeFlow.first()
+            val titanBands = userPreferencesRepository.titanEqBandsFlow.first()
 
             equalizerManager.restoreState(
                 eqEnabled, presetName, customBands,
                 bassBoostEnabled, bassBoostStrength,
                 virtualizerEnabled, virtualizerStrength,
-                loudnessEnabled, loudnessStrength
+                loudnessEnabled, loudnessStrength,
+                titanEnabled, titanPreAmp, titanReplayGainMode, titanBands
             )
 
             val sessionId = engine.getAudioSessionId()
@@ -357,6 +362,13 @@ class MusicService : MediaSessionService() {
         override fun onMediaItemTransition(item: MediaItem?, reason: Int) {
             requestWidgetFullUpdate(force = true)
             mediaSession?.let { refreshMediaSessionUi(it) }
+
+            // Analytics: Record play event
+            item?.mediaId?.toLongOrNull()?.let { songId ->
+                serviceScope.launch {
+                    musicRepository.recordPlayEvent(songId)
+                }
+            }
         }
 
         override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {

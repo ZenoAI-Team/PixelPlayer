@@ -68,7 +68,7 @@ sealed class PlaylistSongsOrderMode {
 class PlaylistViewModel @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository,
     private val musicRepository: MusicRepository,
-    private val aiPlaylistGenerator: com.theveloper.pixelplay.data.ai.AiPlaylistGenerator,
+    private val magicWandEngine: com.theveloper.pixelplay.data.ai.MagicWandEngine,
     private val m3uManager: M3uManager,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
@@ -805,8 +805,8 @@ class PlaylistViewModel @Inject constructor(
                     musicRepository.getAudioFiles().first()
                 }
 
-                // Call AiPlaylistGenerator
-                val result = aiPlaylistGenerator.generate(
+                // Call MagicWandEngine
+                val result = magicWandEngine.generate(
                     userPrompt = prompt,
                     allSongs = allSongs,
                     minLength = minLength,

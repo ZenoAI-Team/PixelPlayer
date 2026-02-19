@@ -56,6 +56,7 @@ import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -218,6 +219,8 @@ fun LyricsSheet(
             }
         )
     }
+
+    var isLyricsInterfaceLocked by rememberSaveable { mutableStateOf(false) }
 
     // Immersive Mode State
     var immersiveMode by remember { mutableStateOf(false) }
@@ -533,7 +536,9 @@ fun LyricsSheet(
                                 accentColor = accentColor,
                                 textStyle = scaledTextStyle,
                                 onLineClick = { syncedLine -> 
-                                    onSeekTo(syncedLine.time.toLong())
+                                    if (isLyricsInterfaceLocked == false) {
+                                        onSeekTo(syncedLine.time.toLong())
+                                    }
                                     resetImmersiveTimer()
                                 },
                                 highlightZoneFraction = highlightZoneFraction,
@@ -755,6 +760,11 @@ fun LyricsSheet(
                     lyrics = lyrics,
                     showSyncedLyrics = showSyncedLyrics == true,
                     isSyncControlsVisible = showSyncControls,
+                    isLyricsInterfaceLocked = isLyricsInterfaceLocked,
+                    onToggleLyricsLock = {
+                        isLyricsInterfaceLocked = isLyricsInterfaceLocked == false
+                        resetImmersiveTimer()
+                    },
                     onSaveLyricsAsLrc = { showSaveLyricsDialog = true },
                     onResetImportedLyrics = {
                         wasResetTriggered = true

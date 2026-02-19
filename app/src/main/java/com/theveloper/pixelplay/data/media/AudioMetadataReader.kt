@@ -19,7 +19,11 @@ data class AudioMetadata(
     val year: Int?,
     val bitrate: Int?,
     val sampleRate: Int?,
-    val artwork: AudioMetadataArtwork?
+    val artwork: AudioMetadataArtwork?,
+    val trackGain: Double? = null,
+    val trackPeak: Double? = null,
+    val albumGain: Double? = null,
+    val albumPeak: Double? = null
 )
 
 data class AudioMetadataArtwork(
@@ -74,6 +78,14 @@ object AudioMetadataReader {
                 val year = propertyMap["DATE"]?.firstOrNull()?.takeIf { it.isNotBlank() }?.take(4)?.toIntOrNull()
                     ?: propertyMap["YEAR"]?.firstOrNull()?.takeIf { it.isNotBlank() }?.toIntOrNull()
 
+                // ReplayGain tags
+                val trackGain = propertyMap["REPLAYGAIN_TRACK_GAIN"]?.firstOrNull()
+                    ?.replace(" dB", "", ignoreCase = true)?.toDoubleOrNull()
+                val trackPeak = propertyMap["REPLAYGAIN_TRACK_PEAK"]?.firstOrNull()?.toDoubleOrNull()
+                val albumGain = propertyMap["REPLAYGAIN_ALBUM_GAIN"]?.firstOrNull()
+                    ?.replace(" dB", "", ignoreCase = true)?.toDoubleOrNull()
+                val albumPeak = propertyMap["REPLAYGAIN_ALBUM_PEAK"]?.firstOrNull()?.toDoubleOrNull()
+
                 // Get artwork
                 val pictures = TagLib.getPictures(fd.detachFd())
                 val artwork = pictures.firstOrNull()?.let { picture ->
@@ -97,7 +109,11 @@ object AudioMetadataReader {
                     year = year,
                     bitrate = bitrate,
                     sampleRate = sampleRate,
-                    artwork = artwork
+                    artwork = artwork,
+                    trackGain = trackGain,
+                    trackPeak = trackPeak,
+                    albumGain = albumGain,
+                    albumPeak = albumPeak
                 )
             }
         } catch (error: Exception) {

@@ -502,9 +502,10 @@ interface MusicDao {
      * Search songs with a result limit for non-paginated contexts.
      */
     @Query("""
-        SELECT * FROM songs
-        WHERE (:applyDirectoryFilter = 0 OR parent_directory_path IN (:allowedParentDirs))
-        AND (title LIKE '%' || :query || '%' OR artist_name LIKE '%' || :query || '%')
+        SELECT songs.* FROM songs
+        JOIN songs_fts ON songs.id = songs_fts.rowid
+        WHERE songs_fts MATCH :query
+        AND (:applyDirectoryFilter = 0 OR parent_directory_path IN (:allowedParentDirs))
         ORDER BY title ASC
         LIMIT :limit
     """)
@@ -777,7 +778,11 @@ interface MusicDao {
     @Query("""
     SELECT mime_type AS mimeType,
            bitrate,
-           sample_rate AS sampleRate
+           sample_rate AS sampleRate,
+           track_gain AS trackGain,
+           track_peak AS trackPeak,
+           album_gain AS albumGain,
+           album_peak AS albumPeak
     FROM songs
     WHERE id = :id
     """)

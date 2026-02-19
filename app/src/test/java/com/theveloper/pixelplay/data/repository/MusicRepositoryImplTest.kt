@@ -40,6 +40,8 @@ class MusicRepositoryImplTest {
     private val mockTelegramRepository: com.theveloper.pixelplay.data.telegram.TelegramRepository = mockk(relaxed = true)
     private val mockSongRepository: SongRepository = mockk(relaxed = true)
     private val mockFavoritesDao: FavoritesDao = mockk(relaxed = true)
+    private val mockEngagementDao: com.theveloper.pixelplay.data.database.EngagementDao = mockk(relaxed = true)
+    private val mockWaveformDao: com.theveloper.pixelplay.data.database.WaveformDao = mockk(relaxed = true)
     private val mockArtistImageRepository: ArtistImageRepository = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
@@ -65,7 +67,7 @@ class MusicRepositoryImplTest {
             println("getAllSongs called with: ${args[0]}, ${args[1]}")
             flowOf(emptyList())
         }
-        every { mockMusicDao.getArtistsWithSongCountsFiltered(any(), any()) } returns flowOf(emptyList())
+        every { mockMusicDao.getArtistsWithSongCountsFiltered(any(), any(), any()) } returns flowOf(emptyList())
 
         // Logic-based DAO stubs
         every { mockMusicDao.getSongs(any(), eq(true)) } answers {
@@ -104,6 +106,8 @@ class MusicRepositoryImplTest {
             songRepository = mockSongRepository,
 
             favoritesDao = mockFavoritesDao,
+            engagementDao = mockEngagementDao,
+            waveformDao = mockWaveformDao,
             artistImageRepository = mockArtistImageRepository,
             folderTreeBuilder = mockk(relaxed = true)
         )
@@ -228,7 +232,7 @@ class MusicRepositoryImplTest {
         val expectedArtists = allArtistEntities.map { 
             if (it.id == 101L) it.copy(trackCount = 2) else it 
         }.filter { it.id == 101L }
-        every { mockMusicDao.getArtistsWithSongCountsFiltered(any(), eq(true)) } returns flowOf(expectedArtists)
+        every { mockMusicDao.getArtistsWithSongCountsFiltered(any(), eq(true), any()) } returns flowOf(expectedArtists)
         
         every { mockUserPreferencesRepository.allowedDirectoriesFlow } returns flowOf(allowedDirs)
         every { mockUserPreferencesRepository.initialSetupDoneFlow } returns flowOf(true)

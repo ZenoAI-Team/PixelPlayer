@@ -21,6 +21,10 @@ object MediaItemBuilder {
     const val EXTERNAL_EXTRA_MIME_TYPE = EXTERNAL_EXTRA_PREFIX + "MIME_TYPE"
     const val EXTERNAL_EXTRA_BITRATE = EXTERNAL_EXTRA_PREFIX + "BITRATE"
     const val EXTERNAL_EXTRA_SAMPLE_RATE = EXTERNAL_EXTRA_PREFIX + "SAMPLE_RATE"
+    const val EXTERNAL_EXTRA_TRACK_GAIN = EXTERNAL_EXTRA_PREFIX + "TRACK_GAIN"
+    const val EXTERNAL_EXTRA_TRACK_PEAK = EXTERNAL_EXTRA_PREFIX + "TRACK_PEAK"
+    const val EXTERNAL_EXTRA_ALBUM_GAIN = EXTERNAL_EXTRA_PREFIX + "ALBUM_GAIN"
+    const val EXTERNAL_EXTRA_ALBUM_PEAK = EXTERNAL_EXTRA_PREFIX + "ALBUM_PEAK"
 
     fun build(song: Song): MediaItem {
         return MediaItem.Builder()
@@ -53,6 +57,10 @@ object MediaItemBuilder {
             putString(EXTERNAL_EXTRA_MIME_TYPE, song.mimeType)
             putInt(EXTERNAL_EXTRA_BITRATE, song.bitrate ?: 0)
             putInt(EXTERNAL_EXTRA_SAMPLE_RATE, song.sampleRate ?: 0)
+            song.trackGain?.let { putDouble(EXTERNAL_EXTRA_TRACK_GAIN, it) }
+            song.trackPeak?.let { putDouble(EXTERNAL_EXTRA_TRACK_PEAK, it) }
+            song.albumGain?.let { putDouble(EXTERNAL_EXTRA_ALBUM_GAIN, it) }
+            song.albumPeak?.let { putDouble(EXTERNAL_EXTRA_ALBUM_PEAK, it) }
         }
 
         metadataBuilder.setExtras(extras)
