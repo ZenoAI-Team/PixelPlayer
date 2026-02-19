@@ -273,6 +273,17 @@ class DualPlayerEngine @Inject constructor(
 
     private fun buildPlayer(handleAudioFocus: Boolean, titanProcessor: TitanAudioProcessor): ExoPlayer {
         val renderersFactory = object : DefaultRenderersFactory(context) {
+            override fun buildAudioSink(
+                context: Context,
+                enableFloatOutput: Boolean,
+                enableAudioTrackPlaybackParams: Boolean
+            ): AudioSink {
+                return androidx.media3.exoplayer.audio.DefaultAudioSink.Builder(context)
+                    .setAudioProcessors(arrayOf(titanProcessor))
+                    .setEnableFloatOutput(true) // Titan Engine: Enable 32-bit Float path
+                    .build()
+            }
+
             override fun buildAudioRenderers(
                 context: Context,
                 extensionRendererMode: Int,
@@ -283,18 +294,14 @@ class DualPlayerEngine @Inject constructor(
                 eventListener: AudioRendererEventListener,
                 out: ArrayList<Renderer>
             ) {
-                val sink = androidx.media3.exoplayer.audio.DefaultAudioSink.Builder(context)
-                    .setAudioProcessors(arrayOf(titanProcessor))
-                    .setEnableFloatOutput(true) // Titan Engine: Enable 32-bit Float path
-                    .build()
-
+                // Add Titan's Optimized High-Res Audio Renderer
                 out.add(object : MediaCodecAudioRenderer(
                     context,
                     mediaCodecSelector,
                     enableDecoderFallback,
                     eventHandler,
                     eventListener,
-                    sink
+                    audioSink
                 ) {
                     override fun getCodecMaxInputSize(
                         codecInfo: MediaCodecInfo,
@@ -306,9 +313,29 @@ class DualPlayerEngine @Inject constructor(
                     }
                 })
 
-                super.buildAudioRenderers(context, extensionRendererMode, mediaCodecSelector, enableDecoderFallback, sink, eventHandler, eventListener, out)
+                // Add extension renderers (like FFmpeg) manually to avoid duplicate MediaCodecAudioRenderer from super
+                if (extensionRendererMode == EXTENSION_RENDERER_MODE_OFF) return
+
+                var extensionRendererIndex = out.size
+                if (extensionRendererMode == EXTENSION_RENDERER_MODE_PREFER) {
+                    extensionRendererIndex--
+                }
+
+                try {
+                    val clazz = Class.forName("androidx.media3.exoplayer.ffmpeg.FfmpegAudioRenderer")
+                    val constructor = clazz.getConstructor(
+                        Handler::class.java,
+                        AudioRendererEventListener::class.java,
+                        AudioSink::class.java
+                    )
+                    val renderer = constructor.newInstance(eventHandler, eventListener, audioSink) as Renderer
+                    out.add(extensionRendererIndex++, renderer)
+                    Timber.i("Titan Engine: Loaded FfmpegAudioRenderer.")
+                } catch (e: Exception) {
+                    // FFmpeg not available or other issue
+                }
             }
-        }.setEnableAudioFloatOutput(false) // Disable Float output helper
+        }.setEnableAudioFloatOutput(true) // Enable Float output helper
          .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
 
         val audioAttributes = AudioAttributes.Builder()
