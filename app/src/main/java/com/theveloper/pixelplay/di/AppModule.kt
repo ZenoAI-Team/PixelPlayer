@@ -338,7 +338,7 @@ object AppModule {
             .addInterceptor { chain ->
                 val originalRequest = chain.request()
                 val requestWithUserAgent = originalRequest.newBuilder()
-                    .header("User-Agent", "PixelPlayer/1.0 (Android; Music Player)")
+                    .header("User-Agent", "VoidPlayer/1.0 (Android; Music Player)")
                     .build()
                 chain.proceed(requestWithUserAgent)
             }
@@ -421,7 +421,7 @@ object AppModule {
             .addInterceptor { chain ->
                 val originalRequest = chain.request()
                 val requestWithHeaders = originalRequest.newBuilder()
-                    .header("User-Agent", "PixelPlayer/1.0 (Android; Music Player)")
+                    .header("User-Agent", "VoidPlayer/1.0 (Android; Music Player)")
                     .header("Accept", "application/json")
                     .build()
                 chain.proceed(requestWithHeaders)

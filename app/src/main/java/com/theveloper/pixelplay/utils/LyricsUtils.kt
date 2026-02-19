@@ -46,9 +46,9 @@ import kotlin.math.sin
 object LyricsUtils {
 
     private val LRC_LINE_REGEX = Pattern.compile("^\\[(\\d{2}):(\\d{2})\\.(\\d{2,3})](.*)$")
-    private val LRC_WORD_REGEX = Pattern.compile("<(\\d{2}):(\\d{2})\\.(\\d{2,3})>([^<]*)")
-    private val LRC_WORD_TAG_REGEX = Regex("<\\d{2}:\\d{2}\\.\\d{2,3}>")
-    private val LRC_WORD_SPLIT_REGEX = Regex("(?=<\\d{2}:\\d{2}\\.\\d{2,3}>)")
+    private val LRC_WORD_REGEX = Pattern.compile("<(\\d{1,2}):(\\d{2})\\.(\\d{2,3})>([^<]*)")
+    private val LRC_WORD_TAG_REGEX = Regex("<\\d{1,2}:\\d{2}\\.\\d{2,3}>")
+    private val LRC_WORD_SPLIT_REGEX = Regex("(?=<\\d{1,2}:\\d{2}\\.\\d{2,3}>)")
     private val LRC_TIMESTAMP_TAG_REGEX = Regex("\\[\\d{1,2}:\\d{2}(?:\\.\\d{1,3})?]")
 
     /**
@@ -82,9 +82,9 @@ object LyricsUtils {
                 val lineTimestamp = minutes * 60 * 1000 + seconds * 1000 + millis
 
                 // Enhanced word-by-word parsing
-                if (text.contains(LRC_WORD_TAG_REGEX)) {
+                if (textWithTags.contains(LRC_WORD_TAG_REGEX)) {
                     val words = mutableListOf<SyncedWord>()
-                    val parts = text.split(LRC_WORD_SPLIT_REGEX)
+                    val parts = textWithTags.split(LRC_WORD_SPLIT_REGEX)
 
                     for (part in parts) {
                         if (part.isEmpty()) continue
@@ -93,7 +93,14 @@ object LyricsUtils {
                             val wordMinutes = wordMatcher.group(1)?.toLong() ?: 0
                             val wordSeconds = wordMatcher.group(2)?.toLong() ?: 0
                             val wordFraction = wordMatcher.group(3)?.toLong() ?: 0
-                            val wordText = stripFormatCharacters(wordMatcher.group(4) ?: "")
+                            var wordText = stripFormatCharacters(wordMatcher.group(4) ?: "")
+
+                            // Heuristic: if wordText contains separators commonly used for translations,
+                            // and it is part of a word-by-word line, strip the trailing untagged part.
+                            if (wordText.contains("\\n") || wordText.contains("|")) {
+                                wordText = wordText.split(Regex("\\\\n|\\|")).first()
+                            }
+
                             val wordMillis = if (wordMatcher.group(3)?.length == 2) wordFraction * 10 else wordFraction
                             val wordTimestamp = wordMinutes * 60 * 1000 + wordSeconds * 1000 + wordMillis
                             if (wordText.isNotEmpty()) {
@@ -160,8 +167,9 @@ object LyricsUtils {
 
     internal fun stripLrcTimestamps(value: String): String {
         if (value.isEmpty()) return value
-        val withoutTags = LRC_TIMESTAMP_TAG_REGEX.replace(value, "")
-        return withoutTags.trimStart()
+        val withoutBracketTags = LRC_TIMESTAMP_TAG_REGEX.replace(value, "")
+        val withoutAllTags = LRC_WORD_TAG_REGEX.replace(withoutBracketTags, "")
+        return withoutAllTags.trimStart()
     }
 
     /**

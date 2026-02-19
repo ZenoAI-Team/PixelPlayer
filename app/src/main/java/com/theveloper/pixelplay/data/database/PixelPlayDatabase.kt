@@ -27,7 +27,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PlayEventEntity::class,
         WaveformEntity::class
     ],
-    version = 26, // Void-Iconic: Added Waveforms cache
+    version = 26, // Titan-Elite: Added Waveforms cache
 
     exportSchema = false
 )

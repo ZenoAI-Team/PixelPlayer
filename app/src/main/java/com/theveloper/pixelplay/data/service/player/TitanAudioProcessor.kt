@@ -8,7 +8,7 @@ import java.nio.ByteOrder
 import kotlin.math.pow
 
 /**
- * Titan Audio Processor: High-fidelity DSP stage for PixelPlayer.
+ * Titan Audio Processor: High-fidelity DSP stage for VoidPlayer.
  * Handles Pre-Amp, ReplayGain, 32-Band Parametric EQ, and Peak Limiting.
  *
  * Processes audio in 32-bit Float PCM to maintain headroom and minimize quantization error.
@@ -20,6 +20,19 @@ class TitanAudioProcessor : BaseAudioProcessor() {
     private var eqEnabled: Boolean = false
     private val eqCore = TitanEqCore(32)
     private var bands: List<TitanEqBand> = emptyList()
+
+    // Real-time amplitude tracking for visualizers
+    @Volatile
+    private var currentPeakAmplitude: Float = 0f
+
+    /**
+     * Returns the current peak amplitude (0.0 to 1.0) of the processed audio.
+     */
+    fun getPeakAmplitude(): Float {
+        val peak = currentPeakAmplitude
+        currentPeakAmplitude = 0f // Reset for next sample block
+        return peak
+    }
 
     /**
      * Sets the Pre-Amp gain in decibels (-30dB to +30dB).
@@ -69,24 +82,36 @@ class TitanAudioProcessor : BaseAudioProcessor() {
         if (remaining == 0) return
 
         val encoding = inputAudioFormat.encoding
-        val outputSize = if (encoding == C.ENCODING_PCM_FLOAT) remaining else remaining * 2
+        val channelCount = inputAudioFormat.channelCount
+        if (channelCount <= 0) return
+
+        // Calculate expected bytes per frame
+        val bytesPerSample = if (encoding == C.ENCODING_PCM_FLOAT) 4 else 2
+        val bytesPerFrame = bytesPerSample * channelCount
+
+        // Ensure we only process complete frames to avoid partial reads/crashes
+        val completeFramesCount = remaining / bytesPerFrame
+        if (completeFramesCount == 0) {
+            inputBuffer.position(inputBuffer.limit()) // Skip unusable partial frame
+            return
+        }
+
+        val outputSize = completeFramesCount * channelCount * 4 // Always output FLOAT (4 bytes)
 
         val outputBuffer = replaceOutputBuffer(outputSize)
         outputBuffer.order(ByteOrder.nativeOrder())
         inputBuffer.order(ByteOrder.nativeOrder())
 
         val totalGain = preAmpGain * replayGain
-        val channelCount = inputAudioFormat.channelCount
+        var maxInBlock = 0f
 
-        while (inputBuffer.hasRemaining()) {
+        repeat(completeFramesCount) {
             for (c in 0 until channelCount) {
-                if (!inputBuffer.hasRemaining()) break
-
                 var sample = if (encoding == C.ENCODING_PCM_FLOAT) {
-                    inputBuffer.float
+                    if (inputBuffer.remaining() >= 4) inputBuffer.float else 0f
                 } else {
                     // Convert 16-bit PCM to Float [-1.0, 1.0]
-                    inputBuffer.short / 32768.0f
+                    if (inputBuffer.remaining() >= 2) inputBuffer.short / 32768.0f else 0f
                 }
 
                 sample *= totalGain
@@ -99,8 +124,15 @@ class TitanAudioProcessor : BaseAudioProcessor() {
                 // Peak Limiter: Ensures no clipping after gain boost
                 sample = sample.coerceIn(-1.0f, 1.0f)
 
+                // Track peak for visualizer
+                val absSample = if (sample < 0) -sample else sample
+                if (absSample > maxInBlock) maxInBlock = absSample
+
                 outputBuffer.putFloat(sample)
             }
+        }
+        if (maxInBlock > currentPeakAmplitude) {
+            currentPeakAmplitude = maxInBlock
         }
         outputBuffer.flip()
     }

@@ -556,7 +556,11 @@ fun SearchHistoryList(
                 top = 8.dp,
             )
         ) {
-            items(historyItems, key = { "history_${it.id ?: it.query}" }) { item ->
+            items(
+                items = historyItems,
+                key = { "history_${it.id ?: it.query}" },
+                contentType = { "history" }
+            ) { item ->
                 SearchHistoryListItem(
                     item = item,
                     onHistoryClick = onHistoryClick,
@@ -721,6 +725,15 @@ fun SearchResultsList(
                             is SearchResultItem.ArtistItem -> "artist_${item.artist.id}"
                             is SearchResultItem.PlaylistItem -> "playlist_${item.playlist.id}_${index}"
                         }
+                    },
+                    contentType = { index ->
+                         val item = itemsForSection[index]
+                         when (item) {
+                            is SearchResultItem.SongItem -> "song"
+                            is SearchResultItem.AlbumItem -> "album"
+                            is SearchResultItem.ArtistItem -> "artist"
+                            is SearchResultItem.PlaylistItem -> "playlist"
+                         }
                     }
                 ) { index ->
                     val item = itemsForSection[index]

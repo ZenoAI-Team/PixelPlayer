@@ -484,6 +484,7 @@ fun FullPlayerContent(
             audioMimeType = if (isMetadataForCurrentSong) playbackAudioMetadata.mimeType else null,
             audioBitrate = if (isMetadataForCurrentSong) playbackAudioMetadata.bitrate else null,
             audioSampleRate = if (isMetadataForCurrentSong) playbackAudioMetadata.sampleRate else null,
+            audioBitDepth = if (isMetadataForCurrentSong) playbackAudioMetadata.bitDepth else null,
             showAudioFileInfo = showPlayerFileInfo,
             onSeek = onSeek,
             expansionFractionProvider = expansionFractionProvider,
@@ -1179,13 +1180,14 @@ private fun SongMetadataDisplaySection(
     }
 }
 
-private fun formatAudioMetaLabel(mimeType: String?, bitrate: Int?, sampleRate: Int?): String? {
+private fun formatAudioMetaLabel(mimeType: String?, bitrate: Int?, sampleRate: Int?, bitDepth: Int?): String? {
     val formatLabel = mimeTypeToFormat(mimeType)
         .takeIf { it != "-" }
         ?.uppercase(Locale.getDefault())
 
     val parts = buildList {
         sampleRate?.takeIf { it > 0 }?.let { add(String.format(Locale.US, "%.1f kHz", it / 1000.0)) }
+        bitDepth?.takeIf { it > 0 }?.let { add("${it}-bit") }
         bitrate?.takeIf { it > 0 }?.let { bitrateValue ->
             val kbpsLabel = "${bitrateValue / 1000} kbps"
             if (formatLabel != null) {
@@ -1207,6 +1209,7 @@ private fun PlayerProgressBarSection(
     audioMimeType: String?,
     audioBitrate: Int?,
     audioSampleRate: Int?,
+    audioBitDepth: Int?,
     showAudioFileInfo: Boolean,
     onSeek: (Long) -> Unit,
     expansionFractionProvider: () -> Float,
@@ -1236,12 +1239,13 @@ private fun PlayerProgressBarSection(
         kotlin.math.abs(reportedDuration - hintDuration) <= 1500L -> reportedDuration
         else -> minOf(reportedDuration, hintDuration)
     }
-    val audioMetaLabel = remember(showAudioFileInfo, audioMimeType, audioBitrate, audioSampleRate) {
+    val audioMetaLabel = remember(showAudioFileInfo, audioMimeType, audioBitrate, audioSampleRate, audioBitDepth) {
         if (showAudioFileInfo) {
             formatAudioMetaLabel(
                 mimeType = audioMimeType,
                 bitrate = audioBitrate,
-                sampleRate = audioSampleRate
+                sampleRate = audioSampleRate,
+                bitDepth = audioBitDepth
             )
         } else {
             null
@@ -1467,9 +1471,13 @@ private fun EfficientTimeLabels(
         }
 
         if (!audioMetaLabel.isNullOrBlank()) {
-            val isHiRes = (duration > 0) && (audioMetaLabel.contains("kHz") && (audioMetaLabel.split("kHz")[0].trim().toDoubleOrNull() ?: 0.0) > 48.0)
+            val isHiRes = (duration > 0) && (
+                (audioMetaLabel.contains("kHz") && (audioMetaLabel.split("kHz")[0].trim().toDoubleOrNull() ?: 0.0) >= 88.2) ||
+                (audioMetaLabel.contains("bit") && (audioMetaLabel.split("-bit")[0].trim().toIntOrNull() ?: 0) > 16)
+            )
             val isLossless = audioMetaLabel.contains("FLAC") || audioMetaLabel.contains("WAV") || audioMetaLabel.contains("ALAC") ||
-                             (audioMetaLabel.contains("kbps") && (audioMetaLabel.split("kbps")[0].trim().toIntOrNull() ?: 0) >= 1411)
+                             (audioMetaLabel.contains("kbps") && (audioMetaLabel.split("kbps")[0].trim().toIntOrNull() ?: 0) >= 1411) ||
+                             isHiRes
 
             Row(
                 modifier = Modifier

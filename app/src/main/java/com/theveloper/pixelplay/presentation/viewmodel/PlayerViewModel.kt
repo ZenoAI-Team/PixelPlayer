@@ -314,6 +314,21 @@ class PlayerViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    /**
+     * Real-time peak amplitude flow for visualizers.
+     * Samples the Titan Engine at ~30 FPS when active.
+     */
+    val realTimePeakAmplitude: Flow<Float> = flow {
+        while (true) {
+            if (stablePlayerState.value.isPlaying) {
+                emit(dualPlayerEngine.getPeakAmplitude())
+            } else {
+                emit(0f)
+            }
+            delay(33) // ~30 FPS
+        }
+    }.flowOn(Dispatchers.Default)
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val currentWaveform: StateFlow<FloatArray> = stablePlayerState
         .map { it.currentSong?.id }

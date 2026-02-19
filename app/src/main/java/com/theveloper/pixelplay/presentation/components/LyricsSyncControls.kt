@@ -29,7 +29,8 @@ fun LyricsSyncControls(
     backgroundColor: Color,
     accentColor: Color,
     onAccentColor: Color,
-    onBackgroundColor: Color
+    onBackgroundColor: Color,
+    isLocked: Boolean = false
 ) {
     Row(
         modifier = modifier
@@ -49,7 +50,8 @@ fun LyricsSyncControls(
             onClick = { onOffsetChange(offsetMillis - 500) },
             weight = 1f,
             containerColor = onAccentColor,
-            contentColor = accentColor
+            contentColor = accentColor,
+            enabled = !isLocked
         )
         // -0.1s
         SyncButton(
@@ -57,7 +59,8 @@ fun LyricsSyncControls(
             onClick = { onOffsetChange(offsetMillis - 100) },
             weight = 1f,
             containerColor = onAccentColor,
-            contentColor = accentColor
+            contentColor = accentColor,
+            enabled = !isLocked
         )
         // Center Display / Reset
         SyncButton(
@@ -75,7 +78,8 @@ fun LyricsSyncControls(
             onClick = { onOffsetChange(offsetMillis + 100) },
             weight = 1f,
             containerColor = onAccentColor,
-            contentColor = accentColor
+            contentColor = accentColor,
+            enabled = !isLocked
         )
         // +0.5s
         SyncButton(
@@ -83,7 +87,8 @@ fun LyricsSyncControls(
             onClick = { onOffsetChange(offsetMillis + 500) },
             weight = 1f,
             containerColor = onAccentColor,
-            contentColor = accentColor
+            contentColor = accentColor,
+            enabled = !isLocked
         )
     }
 }
