@@ -22,8 +22,10 @@ class ArtistImagesModuleHandler @Inject constructor(
     override suspend fun export(): String = withContext(Dispatchers.IO) {
         val artists = musicDao.getAllArtistsListRaw()
         val entries = artists
-            .filter { !it.imageUrl.isNullOrEmpty() }
-            .map { ArtistImageBackupEntry(artistName = it.name, imageUrl = it.imageUrl!!) }
+            .mapNotNull { artist ->
+                val imageUrl = artist.imageUrl?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                ArtistImageBackupEntry(artistName = artist.name, imageUrl = imageUrl)
+            }
         gson.toJson(entries)
     }
 

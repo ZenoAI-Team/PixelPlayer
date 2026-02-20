@@ -281,7 +281,11 @@ class NeteaseApiService @Inject constructor() {
         return try {
             val code = JSONObject(resp).optInt("code", -1)
             if (code == 301 && hasLogin()) {
-                try { ensureWeapiSession() } catch (_: Exception) {}
+                try {
+                    ensureWeapiSession()
+                } catch (e: Exception) {
+                    Timber.w(e, "$TAG: session warm-up failed, continuing with original response")
+                }
                 resp = call()
             }
             resp

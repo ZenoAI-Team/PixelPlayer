@@ -258,8 +258,9 @@ class TelegramStreamProxy @Inject constructor(
             try {
                 // Pre-resolve a free port since CIO doesn't support port 0 with resolvedConnectors()
                 val freePort = ServerSocket(0).use { it.localPort }
-                server = createServer(freePort)
-                server!!.start(wait = false)
+                val createdServer = createServer(freePort)
+                createdServer.start(wait = false)
+                server = createdServer
                 actualPort = freePort
                 LogUtils.d("StreamProxy", "Started on port $actualPort")
             } catch (e: Exception) {

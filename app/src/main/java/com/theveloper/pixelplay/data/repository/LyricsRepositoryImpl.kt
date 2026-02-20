@@ -837,7 +837,8 @@ class LyricsRepositoryImpl @Inject constructor(
             )
 
             if (response != null && (!response.syncedLyrics.isNullOrEmpty() || !response.plainLyrics.isNullOrEmpty())) {
-                val rawLyricsToSave = response.syncedLyrics ?: response.plainLyrics!!
+                val rawLyricsToSave = response.syncedLyrics ?: response.plainLyrics
+                    ?: return@withContext Result.failure(NoLyricsFoundException())
 
                 val parsedLyrics = LyricsUtils.parseLyrics(rawLyricsToSave).copy(areFromRemote = true)
                 if (!parsedLyrics.isValid()) {

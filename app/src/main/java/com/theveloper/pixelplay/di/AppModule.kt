@@ -352,9 +352,10 @@ object AppModule {
                 repeat(3) { attempt ->
                     try {
                         response?.close()
-                        response = chain.proceed(request)
-                        if (response!!.isSuccessful || response!!.code == 404) {
-                            return@addInterceptor response!!
+                        val currentResponse = chain.proceed(request)
+                        response = currentResponse
+                        if (currentResponse.isSuccessful || currentResponse.code == 404) {
+                            return@addInterceptor currentResponse
                         }
                     } catch (e: java.io.IOException) {
                         lastException = e
@@ -443,7 +444,7 @@ object AppModule {
                         android.util.Log.w("OkHttp-Retry", "Attempt $attempt failed: ${e.message}")
                     }
                 }
-                throw lastException!!
+                throw lastException ?: java.io.IOException("Retry attempts exhausted for ${request.url}")
             }
             .addInterceptor(loggingInterceptor)
             .build()

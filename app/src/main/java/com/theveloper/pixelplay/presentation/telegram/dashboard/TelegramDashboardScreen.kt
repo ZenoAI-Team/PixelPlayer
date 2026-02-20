@@ -203,8 +203,10 @@ fun TelegramDashboardScreen(
             if (isEmpty) {
                 ExpressiveEmptyState(
                     modifier = Modifier
+                        .align(Alignment.TopCenter)
                         .fillMaxSize()
-                        .padding(top = currentTopBarHeightDp + 8.dp),
+                        //.padding(top = currentTopBarHeightDp + 8.dp)
+                    ,
                     onAdd = onAddChannel
                 )
             } else {
@@ -274,27 +276,30 @@ fun TelegramDashboardScreen(
             label = "telegramFabScale"
         )
 
-        MediumExtendedFloatingActionButton(
-            onClick = onAddChannel,
-            text = {
-                Text(
-                    "Add Channel",
-                    fontFamily = GoogleSansRounded,
-                    fontWeight = FontWeight.SemiBold
-                )
-            },
-            icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
-            shape = CircleShape,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = fabBottomPadding)
-                .graphicsLayer {
-                    scaleX = fabScale
-                    scaleY = fabScale
+        if(channels.isNotEmpty()){
+            MediumExtendedFloatingActionButton(
+                onClick = onAddChannel,
+                text = {
+                    Text(
+                        "Add Channel",
+                        fontFamily = GoogleSansRounded,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 },
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        )
+                expanded = channels.isNotEmpty(),
+                icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
+                shape = CircleShape,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 16.dp, bottom = fabBottomPadding)
+                    .graphicsLayer {
+                        scaleX = fabScale
+                        scaleY = fabScale
+                    },
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
 
         SnackbarHost(
             hostState = snackbarHostState,
@@ -735,7 +740,7 @@ private fun ExpressiveEmptyState(
                 imageVector = Icons.Rounded.CloudSync,
                 contentDescription = null,
                 modifier = Modifier.size(56.dp),
-                tint = MaterialTheme.colorScheme.primary
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }
 

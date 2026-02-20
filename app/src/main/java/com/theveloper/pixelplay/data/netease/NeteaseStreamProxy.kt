@@ -107,8 +107,9 @@ class NeteaseStreamProxy @Inject constructor(
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val freePort = ServerSocket(0).use { it.localPort }
-                server = createServer(freePort)
-                server!!.start(wait = false)
+                val createdServer = createServer(freePort)
+                createdServer.start(wait = false)
+                server = createdServer
                 actualPort = freePort
                 Timber.d("NeteaseStreamProxy started on port $actualPort")
             } catch (e: Exception) {

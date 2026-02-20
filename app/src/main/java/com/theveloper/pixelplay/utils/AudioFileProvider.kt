@@ -24,12 +24,27 @@ object AudioFileProvider {
             val tempWavFile = File.createTempFile("input_mono", ".wav", context.cacheDir)
 
             var totalBytesWritten = 0
-            var sampleRate = 0
-            try {
-                extractor.setDataSource(context, uri, null)
-                val trackIndex = findAudioTrack(extractor)
-                if (trackIndex == -1) {
-                    error("No audio track found.")
+            val bufferInfo = MediaCodec.BufferInfo()
+            var isEndOfStream = false
+
+            while (!isEndOfStream) {
+                val inputBufferIndex = decoder.dequeueInputBuffer(TIMEOUT_US)
+                if (inputBufferIndex >= 0) {
+                    val inputBuffer = decoder.getInputBuffer(inputBufferIndex)
+                    if (inputBuffer == null) {
+                        Log.w("AudioFileProvider", "Decoder input buffer was null, ending decode early")
+                        decoder.queueInputBuffer(inputBufferIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+                        isEndOfStream = true
+                        continue
+                    }
+                    val sampleSize = extractor.readSampleData(inputBuffer, 0)
+                    if (sampleSize < 0) {
+                        decoder.queueInputBuffer(inputBufferIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+                        isEndOfStream = true
+                    } else {
+                        decoder.queueInputBuffer(inputBufferIndex, 0, sampleSize, extractor.sampleTime, 0)
+                        extractor.advance()
+                    }
                 }
                 extractor.selectTrack(trackIndex)
                 val format = extractor.getTrackFormat(trackIndex)
@@ -64,22 +79,25 @@ object AudioFileProvider {
                         }
                     }
 
-                    var outputBufferIndex = decoder.dequeueOutputBuffer(bufferInfo, TIMEOUT_US)
-                    while (outputBufferIndex >= 0) {
-                        val outputBuffer = decoder.getOutputBuffer(outputBufferIndex)
-                        if (outputBuffer != null) {
-                            val chunk = ByteArray(bufferInfo.size)
-                            outputBuffer.get(chunk)
-
-                            // --- CONVERSIÓN A MONO ---
-                            val monoChunk = stereoToMono(chunk)
-                            fileOutputStream.write(monoChunk)
-                            totalBytesWritten += monoChunk.size
-                        }
-
+                var outputBufferIndex = decoder.dequeueOutputBuffer(bufferInfo, TIMEOUT_US)
+                while (outputBufferIndex >= 0) {
+                    val outputBuffer = decoder.getOutputBuffer(outputBufferIndex)
+                    if (outputBuffer == null) {
+                        Log.w("AudioFileProvider", "Decoder output buffer was null, skipping chunk")
                         decoder.releaseOutputBuffer(outputBufferIndex, false)
                         outputBufferIndex = decoder.dequeueOutputBuffer(bufferInfo, TIMEOUT_US)
+                        continue
                     }
+                    val chunk = ByteArray(bufferInfo.size)
+                    outputBuffer.get(chunk)
+
+                    // --- CONVERSIÓN A MONO ---
+                    val monoChunk = stereoToMono(chunk)
+                    fileOutputStream.write(monoChunk)
+                    totalBytesWritten += monoChunk.size
+
+                    decoder.releaseOutputBuffer(outputBufferIndex, false)
+                    outputBufferIndex = decoder.dequeueOutputBuffer(bufferInfo, TIMEOUT_US)
                 }
             } finally {
                 fileOutputStream?.close()

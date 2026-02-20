@@ -84,7 +84,8 @@ object LyricsUtils {
                 // Enhanced word-by-word parsing
                 if (textWithTags.contains(LRC_WORD_TAG_REGEX)) {
                     val words = mutableListOf<SyncedWord>()
-                    val parts = textWithTags.split(LRC_WORD_SPLIT_REGEX)
+                    val parts = text.split(LRC_WORD_SPLIT_REGEX)
+                    val displayText = LRC_WORD_TAG_REGEX.replace(text, "")
 
                     for (part in parts) {
                         if (part.isEmpty()) continue
@@ -93,18 +94,16 @@ object LyricsUtils {
                             val wordMinutes = wordMatcher.group(1)?.toLong() ?: 0
                             val wordSeconds = wordMatcher.group(2)?.toLong() ?: 0
                             val wordFraction = wordMatcher.group(3)?.toLong() ?: 0
-                            var wordText = stripFormatCharacters(wordMatcher.group(4) ?: "")
-
-                            // Heuristic: if wordText contains separators commonly used for translations,
-                            // and it is part of a word-by-word line, strip the trailing untagged part.
-                            if (wordText.contains("\\n") || wordText.contains("|")) {
-                                wordText = wordText.split(Regex("\\\\n|\\|")).first()
-                            }
-
+                            val wordText = stripFormatCharacters(wordMatcher.group(4) ?: "")
+                            val timedWordText = wordText
+                                .substringBefore('\n')
+                                .substringBefore('\r')
+                                .substringBefore("\\n")
+                                .substringBefore("\\r")
                             val wordMillis = if (wordMatcher.group(3)?.length == 2) wordFraction * 10 else wordFraction
                             val wordTimestamp = wordMinutes * 60 * 1000 + wordSeconds * 1000 + wordMillis
-                            if (wordText.isNotEmpty()) {
-                                words.add(SyncedWord(wordTimestamp.toInt(), wordText))
+                            if (timedWordText.isNotEmpty()) {
+                                words.add(SyncedWord(wordTimestamp.toInt(), timedWordText))
                             }
                         } else {
                             // Preserve only leading untagged text as a timed word.
@@ -120,9 +119,9 @@ object LyricsUtils {
                     }
 
                     if (words.isNotEmpty()) {
-                        syncedLines.add(SyncedLine(lineTimestamp.toInt(), text, words))
+                        syncedLines.add(SyncedLine(lineTimestamp.toInt(), displayText, words))
                     } else {
-                        syncedLines.add(SyncedLine(lineTimestamp.toInt(), text))
+                        syncedLines.add(SyncedLine(lineTimestamp.toInt(), displayText))
                     }
                 } else {
                     syncedLines.add(SyncedLine(lineTimestamp.toInt(), text))
