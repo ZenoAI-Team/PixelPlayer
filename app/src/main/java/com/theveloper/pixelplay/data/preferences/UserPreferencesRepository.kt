@@ -18,6 +18,7 @@ import com.theveloper.pixelplay.data.model.FolderSource
 import com.theveloper.pixelplay.data.model.LyricsSourcePreference
 import com.theveloper.pixelplay.data.model.TransitionSettings
 import com.theveloper.pixelplay.data.equalizer.EqualizerPreset // Added import
+import com.theveloper.pixelplay.data.service.player.TitanEqBand
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -155,6 +156,12 @@ constructor(
         val VIRTUALIZER_ENABLED = booleanPreferencesKey("virtualizer_enabled")
         val LOUDNESS_ENHANCER_ENABLED = booleanPreferencesKey("loudness_enhancer_enabled")
         val LOUDNESS_ENHANCER_STRENGTH = intPreferencesKey("loudness_enhancer_strength")
+
+        // Titan Engine Settings
+        val TITAN_PRE_AMP = androidx.datastore.preferences.core.floatPreferencesKey("titan_pre_amp")
+        val TITAN_REPLAY_GAIN_MODE = intPreferencesKey("titan_replay_gain_mode")
+        val TITAN_EQ_ENABLED = booleanPreferencesKey("titan_eq_enabled")
+        val TITAN_EQ_SETTINGS = stringPreferencesKey("titan_eq_settings_json")
         
         // Dismissed Warning States
         val BASS_BOOST_DISMISSED = booleanPreferencesKey("bass_boost_dismissed")
@@ -1652,6 +1659,65 @@ constructor(
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.VIRTUALIZER_STRENGTH] = strength.coerceIn(0, 1000)
         }
+    }
+
+    // ===== Titan Engine Settings =====
+
+    val titanPreAmpFlow: Flow<Float> = dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.TITAN_PRE_AMP] ?: 0f
+    }
+
+    suspend fun setTitanPreAmp(db: Float) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.TITAN_PRE_AMP] = db.coerceIn(-30f, 30f)
+        }
+    }
+
+    val titanReplayGainModeFlow: Flow<Int> = dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.TITAN_REPLAY_GAIN_MODE] ?: 0
+    }
+
+    suspend fun setTitanReplayGainMode(mode: Int) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.TITAN_REPLAY_GAIN_MODE] = mode.coerceIn(0, 2)
+        }
+    }
+
+    val titanEqEnabledFlow: Flow<Boolean> = dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.TITAN_EQ_ENABLED] ?: false
+    }
+
+    suspend fun setTitanEqEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.TITAN_EQ_ENABLED] = enabled
+        }
+    }
+
+    val titanEqBandsFlow: Flow<List<TitanEqBand>> = dataStore.data.map { preferences ->
+        val jsonString = preferences[PreferencesKeys.TITAN_EQ_SETTINGS]
+        if (jsonString != null) {
+            try {
+                json.decodeFromString<List<TitanEqBand>>(jsonString)
+            } catch (e: Exception) {
+                defaultTitanBands()
+            }
+        } else {
+            defaultTitanBands()
+        }
+    }
+
+    suspend fun saveTitanEqBands(bands: List<TitanEqBand>) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.TITAN_EQ_SETTINGS] = json.encodeToString(bands)
+        }
+    }
+
+    private fun defaultTitanBands(): List<TitanEqBand> {
+        val frequencies = listOf(
+            20f, 25f, 31.5f, 40f, 50f, 63f, 80f, 100f, 125f, 160f, 200f, 250f, 315f, 400f, 500f, 630f, 800f,
+            1000f, 1250f, 1600f, 2000f, 2500f, 3150f, 4000f, 5000f, 6300f, 8000f, 10000f, 12500f, 16000f, 20000f, 22000f
+        )
+        return frequencies.map { freq -> TitanEqBand(freq, 0f, 1.414f) }
     }
 
     // ===== End Equalizer Settings =====

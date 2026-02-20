@@ -532,7 +532,7 @@ fun WelcomePage() {
                 ),
             )
             Text(
-                text = "PixelPlayer",
+                text = "VoidPlayer",
                 style = MaterialTheme.typography.displayLarge.copy(
                     fontFamily = GoogleSansRounded,
                     fontSize = 46.sp,
@@ -656,7 +656,7 @@ fun MediaPermissionPage(
     PermissionPageLayout(
         title = "Media Permission",
         granted = isGranted,
-        description = "PixelPlayer needs access to your audio files to build your music library.",
+        description = "VoidPlayer needs access to your audio files to build your music library.",
         buttonText = if (isGranted) "Permission Granted" else "Grant Media Permission",
         buttonEnabled = !isGranted,
         icons = mediaIcons,
@@ -725,7 +725,7 @@ fun AlarmsPermissionPage(uiState: SetupUiState) {
     PermissionPageLayout(
         title = "Alarms & Reminders",
         granted = isGranted,
-        description = "To ensure the Sleep Timer works reliably and pauses music exactly when you want, PixelPlayer needs permission to schedule exact alarms.",
+        description = "To ensure the Sleep Timer works reliably and pauses music exactly when you want, VoidPlayer needs permission to schedule exact alarms.",
         buttonText = if (isGranted) "Permission Granted" else "Grant Permission",
         buttonEnabled = !isGranted,
         icons = icons,
@@ -756,7 +756,7 @@ fun AllFilesPermissionPage(uiState: SetupUiState) {
     PermissionPageLayout(
         title = "All Files Access",
         granted = isGranted,
-        description = "For some Android versions, PixelPlayer needs broader file access to find all your music.",
+        description = "For some Android versions, VoidPlayer needs broader file access to find all your music.",
         buttonText = if(isGranted) "Permission Granted" else "Go to Settings",
         buttonEnabled = !isGranted,
         icons = fileIcons,
@@ -1077,7 +1077,7 @@ fun BatteryOptimizationPage(
     PermissionPageLayout(
         title = "Battery Optimization",
         granted = isIgnoringBatteryOptimizations,
-        description = "Some Android devices aggressively kill background apps. Disable battery optimization for PixelPlayer to prevent unexpected playback interruptions.",
+        description = "Some Android devices aggressively kill background apps. Disable battery optimization for VoidPlayer to prevent unexpected playback interruptions.",
         buttonText = if (isIgnoringBatteryOptimizations) "Permission Granted" else "Disable Optimization",
         buttonEnabled = !isIgnoringBatteryOptimizations,
         icons = batteryIcons,

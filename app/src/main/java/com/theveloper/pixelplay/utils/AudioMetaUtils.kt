@@ -11,7 +11,11 @@ import java.util.Locale
 data class AudioMeta(
     val mimeType: String?,
     val bitrate: Int?,      // bits per second
-    val sampleRate: Int?   // Hz
+    val sampleRate: Int?,   // Hz
+    val trackGain: Double? = null,
+    val trackPeak: Double? = null,
+    val albumGain: Double? = null,
+    val albumPeak: Double? = null
 )
 
 object AudioMetaUtils {
@@ -71,7 +75,13 @@ object AudioMetaUtils {
             Log.w("AudioMetaUtils", "Extractor failed for $filePath: ${e.message}")
         }
 
-        return AudioMeta(mimeType, bitrate, sampleRate)
+        return AudioMeta(
+            mimeType, bitrate, sampleRate,
+            trackGain = null, // MediaMetadataRetriever/Extractor doesn't reliably support ReplayGain
+            trackPeak = null,
+            albumGain = null,
+            albumPeak = null
+        )
 
     }
 

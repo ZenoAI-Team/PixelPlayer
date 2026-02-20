@@ -25,11 +25,13 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CloudSync
@@ -80,7 +82,7 @@ import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.theveloper.pixelplay.data.database.TelegramChannelEntity
-import com.theveloper.pixelplay.presentation.components.CollapsibleCommonTopBar
+import com.theveloper.pixelplay.presentation.components.ExpressiveTopBarContent
 import com.theveloper.pixelplay.presentation.components.NoInternetScreen
 import com.theveloper.pixelplay.ui.theme.GoogleSansRounded
 import java.io.File
@@ -233,17 +235,37 @@ fun TelegramDashboardScreen(
             }
         }
 
-        CollapsibleCommonTopBar(
-            title = "Telegram Channels",
-            collapseFraction = collapseFraction,
-            headerHeight = currentTopBarHeightDp,
-            onBackClick = onBack,
-            containerColor = topBarContainerColor,
+        Box(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
+                .height(currentTopBarHeightDp)
+                .background(topBarContainerColor)
                 .zIndex(5f)
-        )
+        ) {
+            Box(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+                FilledTonalIconButton(
+                    onClick = onBack,
+                    modifier = Modifier.padding(start = 12.dp, top = 8.dp).zIndex(1f),
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    )
+                ) {
+                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                }
+
+                ExpressiveTopBarContent(
+                    title = "Telegram Channels",
+                    collapseFraction = collapseFraction,
+                    modifier = Modifier.fillMaxSize(),
+                    containerHeightRange = 80.dp to 56.dp,
+                    expandedTitleStartPadding = 20.dp,
+                    collapsedTitleStartPadding = 68.dp,
+                    collapsedTitleVerticalBias = -0.4f
+                )
+            }
+        }
 
         val fabScale by animateFloatAsState(
             targetValue = 1f,

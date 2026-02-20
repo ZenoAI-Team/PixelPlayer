@@ -8,6 +8,7 @@ import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.rememberTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -102,7 +103,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.theveloper.pixelplay.R
 import com.theveloper.pixelplay.data.equalizer.EqualizerPreset
-import com.theveloper.pixelplay.presentation.components.CollapsibleCommonTopBar
 import com.theveloper.pixelplay.presentation.components.ExpressiveTopBarContent
 import com.theveloper.pixelplay.presentation.viewmodel.EqualizerViewModel
 import com.theveloper.pixelplay.presentation.viewmodel.PlayerSheetState
@@ -146,6 +146,9 @@ import com.theveloper.pixelplay.presentation.components.SavePresetDialog
 import com.theveloper.pixelplay.presentation.components.RenamePresetDialog
 import com.theveloper.pixelplay.data.preferences.UserPreferencesRepository.EqualizerViewMode
 import androidx.compose.material.icons.rounded.ViewQuilt
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.material.icons.automirrored.rounded.ShowChart
@@ -301,12 +304,23 @@ fun EqualizerScreen(
         LazyColumn(
             state = lazyListState,
             contentPadding = PaddingValues(
-                top = currentTopBarHeightDp + 8.dp,
+                top = currentTopBarHeightDp,
                 bottom = MiniPlayerHeight + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 20.dp
             ),
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
+            item(key = "eq_visualizer") {
+                val amplitude by playerViewModel.realTimePeakAmplitude.collectAsState(initial = 0f)
+                SpringLoadedEqVisualizer(
+                    amplitude = amplitude,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+
             // Preset Tabs
             item(key = "preset_tabs") {
                 val visiblePresets = remember(uiState.accessiblePresets) {
@@ -381,65 +395,109 @@ fun EqualizerScreen(
             }
         }
         
-        CollapsibleCommonTopBar(
-            title = "Equalizer",
+        EqualizerTopBar(
             collapseFraction = collapseFraction,
             headerHeight = currentTopBarHeightDp,
-            onBackClick = { navController.popBackStack() },
-            expandedTitleStartPadding = 18.dp, // Matches original 18.dp
-            collapsedTitleStartPadding = 68.dp,
-            actions = {
-                // View Mode Toggle
-                FilledIconButton(
-                    onClick = { equalizerViewModel.cycleViewMode() },
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                        contentColor = MaterialTheme.colorScheme.onSurface
-                    )
-                ) {
-                    Icon(
-                        imageVector = when(uiState.viewMode) {
-                            EqualizerViewMode.SLIDERS -> Icons.Rounded.GraphicEq
-                            EqualizerViewMode.GRAPH -> Icons.AutoMirrored.Rounded.ShowChart
-                            EqualizerViewMode.HYBRID -> Icons.AutoMirrored.Rounded.ViewQuilt
-                        },
-                        contentDescription = "Change View Mode"
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                // Power toggle
-                val isEnabled = uiState.isEnabled
-                val powerButtonCorner by animateIntAsState(
-                    targetValue = if (isEnabled) 50 else 12,
-                    label = "PowerButtonShape"
-                )
-
-                FilledIconToggleButton(
-                    checked = isEnabled,
-                    onCheckedChange = { equalizerViewModel.toggleEqualizer() },
-                    shape = RoundedCornerShape(powerButtonCorner),
-                    colors = IconButtonDefaults.filledIconToggleButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                        checkedContainerColor = MaterialTheme.colorScheme.primary,
-                        checkedContentColor = MaterialTheme.colorScheme.onPrimary
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.PowerSettingsNew,
-                        contentDescription = if (isEnabled) "Disable equalizer" else "Enable equalizer"
-                    )
-                }
-                
-                Spacer(modifier = Modifier.width(12.dp))
-            }
+            isEnabled = uiState.isEnabled,
+            onBackPressed = { navController.popBackStack() },
+            onToggleEnabled = { equalizerViewModel.toggleEqualizer() },
+            viewMode = uiState.viewMode,
+            onToggleViewMode = { equalizerViewModel.cycleViewMode() }
         )
     }
 }
 
-// EqualizerTopBar removed, replaced by CollapsibleCommonTopBar
+@Composable
+fun EqualizerTopBar(
+    collapseFraction: Float,
+    headerHeight: androidx.compose.ui.unit.Dp,
+    isEnabled: Boolean,
+    onBackPressed: () -> Unit,
+    onToggleEnabled: () -> Unit, // Added missing param
+    viewMode: EqualizerViewMode,
+    onToggleViewMode: () -> Unit
+) {
+    val surfaceColor = MaterialTheme.colorScheme.surface
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(headerHeight)
+            .background(surfaceColor.copy(alpha = collapseFraction))
+    ) {
+        Box(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+            FilledIconButton(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 12.dp, top = 4.dp),
+                onClick = onBackPressed,
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                )
+            ) {
+                Icon(
+                    painterResource(R.drawable.rounded_arrow_back_24),
+                    contentDescription = "Back"
+                )
+            }
+
+            // View Mode Toggle
+            FilledIconButton(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(end = 64.dp, top = 4.dp), // Position to the left of Power toggle
+                onClick = onToggleViewMode,
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
+            ) {
+                Icon(
+                    imageVector = when(viewMode) {
+                        EqualizerViewMode.SLIDERS -> Icons.Rounded.GraphicEq
+                        EqualizerViewMode.GRAPH -> Icons.AutoMirrored.Rounded.ShowChart
+                        EqualizerViewMode.HYBRID -> Icons.AutoMirrored.Rounded.ViewQuilt
+                    },
+                    contentDescription = "Change View Mode"
+                )
+            }
+
+            // Power toggle
+            val powerButtonCorner by animateIntAsState(
+                targetValue = if (isEnabled) 50 else 12,
+                label = "PowerButtonShape"
+            )
+
+            FilledIconToggleButton(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(end = 12.dp, top = 4.dp),
+                checked = isEnabled,
+                onCheckedChange = { onToggleEnabled() },
+                shape = RoundedCornerShape(powerButtonCorner), // Animated shape
+                colors = IconButtonDefaults.filledIconToggleButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    checkedContainerColor = MaterialTheme.colorScheme.primary,
+                    checkedContentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.PowerSettingsNew,
+                    contentDescription = if (isEnabled) "Disable equalizer" else "Enable equalizer"
+                )
+            }
+
+            ExpressiveTopBarContent(
+                title = "Equalizer",
+                collapseFraction = collapseFraction,
+                collapsedTitleStartPadding = 68.dp,
+                expandedTitleStartPadding = 18.dp,
+                modifier = Modifier.fillMaxSize().padding(start = 0.dp, end = 0.dp)
+            )
+        }
+    }
+}
 
 @Composable
 private fun PresetTabsRow(
@@ -1824,4 +1882,58 @@ private fun HybridFrequencyResponseGraph(
             }
         }
      }
+}
+
+@Composable
+fun SpringLoadedEqVisualizer(
+    amplitude: Float,
+    modifier: Modifier = Modifier
+) {
+    val barCount = 32
+
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val secondaryColor = MaterialTheme.colorScheme.secondary
+
+    // Random variation for each bar to simulate frequency bands
+    val barMultipliers = remember { List(barCount) { 0.4f + (Math.random().toFloat() * 0.6f) } }
+
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        repeat(barCount) { index ->
+            val targetScale = (amplitude * barMultipliers[index]).coerceIn(0.05f, 1f)
+
+            val animatedHeight by animateFloatAsState(
+                targetValue = targetScale,
+                animationSpec = spring(
+                    dampingRatio = 0.6f, // Snappy but bouncy
+                    stiffness = Spring.StiffnessLow
+                ),
+                label = "bar_height_$index"
+            )
+
+            val glowAlpha = (animatedHeight * 0.6f).coerceIn(0f, 1f)
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(animatedHeight)
+                    .graphicsLayer {
+                        // Neon Glow effect
+                        shadowElevation = animatedHeight * 8f
+                    }
+                    .clip(RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                primaryColor,
+                                secondaryColor.copy(alpha = 0.6f)
+                            )
+                        )
+                    )
+            )
+        }
+    }
 }

@@ -22,7 +22,11 @@ data class AudioMetadata(
     val year: Int?,
     val bitrate: Int?,
     val sampleRate: Int?,
-    val artwork: AudioMetadataArtwork?
+    val artwork: AudioMetadataArtwork?,
+    val trackGain: Double? = null,
+    val trackPeak: Double? = null,
+    val albumGain: Double? = null,
+    val albumPeak: Double? = null
 )
 
 data class AudioMetadataArtwork(

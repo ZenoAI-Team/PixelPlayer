@@ -250,4 +250,12 @@ interface MusicRepository {
         sortOption: com.theveloper.pixelplay.data.model.SortOption,
         storageFilter: com.theveloper.pixelplay.data.model.StorageFilter
     ): List<Long>
+
+    // Analytics
+    suspend fun recordPlayEvent(songId: Long)
+    suspend fun getPlayEvents(startTime: Long, endTime: Long): List<com.theveloper.pixelplay.data.database.PlayEventEntity>
+    suspend fun getTopSongs(limit: Int): List<Pair<Long, Int>>
+
+    // Waveforms
+    suspend fun getWaveform(songId: Long): FloatArray?
 }

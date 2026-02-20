@@ -34,6 +34,12 @@ android {
         versionName = project.findProperty("APP_VERSION_NAME") as String
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        ndk {
+            // Significant APK size reduction: Only bundle libraries for ARM architectures.
+            // This removes x86 and x86_64 binaries (used for emulators) which bloat the APK.
+            abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a"))
+        }
     }
 
     buildTypes {

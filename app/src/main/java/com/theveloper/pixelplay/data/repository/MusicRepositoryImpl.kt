@@ -87,6 +87,8 @@ class MusicRepositoryImpl @Inject constructor(
     override val telegramRepository: com.theveloper.pixelplay.data.telegram.TelegramRepository,
     private val songRepository: SongRepository,
     private val favoritesDao: FavoritesDao,
+    private val engagementDao: com.theveloper.pixelplay.data.database.EngagementDao,
+    private val waveformDao: com.theveloper.pixelplay.data.database.WaveformDao,
     private val artistImageRepository: ArtistImageRepository,
     private val folderTreeBuilder: FolderTreeBuilder
 ) : MusicRepository {
@@ -667,5 +669,31 @@ class MusicRepositoryImpl @Inject constructor(
             sortOrder = sortOption.storageKey,
             filterMode = filterMode
         )
+    }
+
+    // Analytics
+    override suspend fun recordPlayEvent(songId: Long): Unit = withContext(Dispatchers.IO) {
+        engagementDao.insertPlayEvent(
+            com.theveloper.pixelplay.data.database.PlayEventEntity(
+                songId = songId,
+                timestamp = System.currentTimeMillis(),
+                durationMs = 0 // Will be updated when track ends or skipped
+            )
+        )
+    }
+
+    override suspend fun getPlayEvents(startTime: Long, endTime: Long): List<com.theveloper.pixelplay.data.database.PlayEventEntity> = withContext(Dispatchers.IO) {
+        engagementDao.getPlayEvents(startTime, endTime)
+    }
+
+    override suspend fun getTopSongs(limit: Int): List<Pair<Long, Int>> = withContext(Dispatchers.IO) {
+        engagementDao.getTopSongs(limit).map { entity: com.theveloper.pixelplay.data.database.SongEngagementEntity ->
+            entity.songId.toLong() to entity.playCount
+        }
+    }
+
+    // Waveforms
+    override suspend fun getWaveform(songId: Long): FloatArray? = withContext(Dispatchers.IO) {
+        waveformDao.getWaveformBySongId(songId)?.amplitudes
     }
 }

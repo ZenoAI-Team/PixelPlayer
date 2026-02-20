@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -55,9 +57,11 @@ fun LyricsMoreBottomSheet(
     lyrics: Lyrics?,
     showSyncedLyrics: Boolean,
     isSyncControlsVisible: Boolean,
+    isLyricsInterfaceLocked: Boolean,
     onSaveLyricsAsLrc: () -> Unit,
     onResetImportedLyrics: () -> Unit,
     onToggleSyncControls: () -> Unit,
+    onToggleLyricsLock: () -> Unit,
     isImmersiveTemporarilyDisabled: Boolean,
     onSetImmersiveTemporarilyDisabled: (Boolean) -> Unit,
     // BottomToggleRow params
@@ -222,6 +226,41 @@ fun LyricsMoreBottomSheet(
                                 onDismissRequest()
                                 onToggleSyncControls()
                             },
+                        colors = ListItemDefaults.colors(
+                            containerColor = Color.Transparent,
+                            headlineColor = contentColor,
+                            leadingIconColor = contentColor
+                        )
+                    )
+
+                    // Lyric Interface Lock
+                    ListItem(
+                        headlineContent = { Text("Lyric Interface Lock") },
+                        leadingContent = {
+                            Icon(
+                                imageVector = if (isLyricsInterfaceLocked) Icons.Rounded.Lock else Icons.Rounded.LockOpen,
+                                contentDescription = null
+                            )
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = isLyricsInterfaceLocked,
+                                onCheckedChange = {
+                                    onToggleLyricsLock()
+                                },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = onAccentColor,
+                                    checkedTrackColor = accentColor,
+                                    uncheckedThumbColor = contentColor,
+                                    uncheckedTrackColor = contentColor.copy(alpha = 0.3f)
+                                )
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(itemBackgroundColor)
+                            .clickable { onToggleLyricsLock() },
                         colors = ListItemDefaults.colors(
                             containerColor = Color.Transparent,
                             headlineColor = contentColor,

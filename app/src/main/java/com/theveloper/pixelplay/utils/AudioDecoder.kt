@@ -19,21 +19,7 @@ object AudioDecoder {
     suspend fun decodeToFloatArray(context: Context, uri: Uri, requiredSamples: Int): Result<FloatArray> = withContext(Dispatchers.IO) {
         runCatching {
             val extractor = MediaExtractor()
-            extractor.setDataSource(context, uri, null)
-
-            val trackIndex = findAudioTrack(extractor)
-            if (trackIndex == -1) {
-                extractor.release()
-                error("No audio track found in the file.")
-            }
-            extractor.selectTrack(trackIndex)
-            val format = extractor.getTrackFormat(trackIndex)
-
-            val mime = format.getString(MediaFormat.KEY_MIME) ?: error("MIME type not found.")
-            val decoder = MediaCodec.createDecoderByType(mime)
-            decoder.configure(format, null, null, 0)
-            decoder.start()
-
+            var decoder: MediaCodec? = null
             val pcmData = mutableListOf<Float>()
             val bufferInfo = MediaCodec.BufferInfo()
             var isEndOfStream = false
@@ -57,6 +43,32 @@ object AudioDecoder {
                         extractor.advance()
                     }
                 }
+                extractor.selectTrack(trackIndex)
+                val format = extractor.getTrackFormat(trackIndex)
+
+                val mime = format.getString(MediaFormat.KEY_MIME) ?: error("MIME type not found.")
+                decoder = MediaCodec.createDecoderByType(mime)
+                decoder.configure(format, null, null, 0)
+                decoder.start()
+
+                val bufferInfo = MediaCodec.BufferInfo()
+                var isEndOfStream = false
+
+                while (!isEndOfStream && pcmData.size < requiredSamples) {
+                    val inputBufferIndex = decoder.dequeueInputBuffer(TIMEOUT_US)
+                    if (inputBufferIndex >= 0) {
+                        val inputBuffer = decoder.getInputBuffer(inputBufferIndex)
+                        if (inputBuffer != null) {
+                            val sampleSize = extractor.readSampleData(inputBuffer, 0)
+                            if (sampleSize < 0) {
+                                decoder.queueInputBuffer(inputBufferIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+                                isEndOfStream = true
+                            } else {
+                                decoder.queueInputBuffer(inputBufferIndex, 0, sampleSize, extractor.sampleTime, 0)
+                                extractor.advance()
+                            }
+                        }
+                    }
 
                 var outputBufferIndex = decoder.dequeueOutputBuffer(bufferInfo, TIMEOUT_US)
                 while (outputBufferIndex >= 0) {
@@ -70,18 +82,22 @@ object AudioDecoder {
                     pcmData.addAll(byteBufferToFloatArray(outputBuffer, format).asList())
                     decoder.releaseOutputBuffer(outputBufferIndex, false)
 
-                    // Si ya tenemos suficientes muestras, salimos del bucle interno
-                    if (pcmData.size >= requiredSamples) break
+                        // Si ya tenemos suficientes muestras, salimos del bucle interno
+                        if (pcmData.size >= requiredSamples) break
 
-                    outputBufferIndex = decoder.dequeueOutputBuffer(bufferInfo, TIMEOUT_US)
+                        outputBufferIndex = decoder.dequeueOutputBuffer(bufferInfo, TIMEOUT_US)
+                    }
                 }
+                Timber.tag("AudioDecoder").d("Successfully decoded ${pcmData.size} samples.")
+            } finally {
+                try {
+                    decoder?.stop()
+                } catch (e: Exception) {
+                    // Ignore
+                }
+                decoder?.release()
+                extractor.release()
             }
-
-            decoder.stop()
-            decoder.release()
-            extractor.release()
-
-            Timber.tag("AudioDecoder").d("Successfully decoded ${pcmData.size} samples.")
 
             // --- MODIFICADO: Rellenamos con silencio si la canción es más corta que lo requerido ---
             if (pcmData.size < requiredSamples) {

@@ -526,6 +526,44 @@ private fun CreateAiPlaylistContent(
 
             HeroAiCard(isGenerating = isGenerating)
 
+            AiSectionCard(title = "Quick Templates") {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val templates = listOf(
+                        "Focus" to "Lo-fi and ambient for deep focus",
+                        "Workout" to "High energy phonk and electronic",
+                        "Chill" to "Acoustic and soft indie vibes",
+                        "Party" to "Uplifting dance and pop hits"
+                    )
+                    templates.forEach { (name, prompt) ->
+                        AssistChip(
+                            onClick = {
+                                basePrompt = prompt
+                                selectedMood = name
+                                energyLevel = if (name == "Workout" || name == "Party") 5 else 2
+                                discoveryLevel = 3
+                            },
+                            label = { Text(name) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Rounded.AutoAwesome,
+                                    contentDescription = null,
+                                    modifier = Modifier.width(18.dp).height(18.dp)
+                                )
+                            },
+                            shape = CircleShape,
+                            colors = AssistChipDefaults.assistChipColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                                labelColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            ),
+                            border = null
+                        )
+                    }
+                }
+            }
+
             AiSectionCard(title = "Intent") {
                 OutlinedTextField(
                     value = playlistName,

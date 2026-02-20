@@ -489,7 +489,7 @@ fun LibraryScreen(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.rounded_settings_24),
-                            contentDescription = "Ajustes"
+                            contentDescription = stringResource(R.string.settings)
                         )
                     }
 //                    FilledTonalIconButton(
@@ -575,7 +575,7 @@ fun LibraryScreen(
                         ) {
                             Icon(
                                 Icons.Default.Edit,
-                                contentDescription = "Reorder tabs",
+                                contentDescription = stringResource(R.string.reorder_tabs),
                                 tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
                             )
                         }
@@ -1544,7 +1544,7 @@ fun LibraryNavigationPill(
                 Icon(
                     modifier = Modifier.rotate(arrowRotation),
                     imageVector = Icons.Rounded.KeyboardArrowDown,
-                    contentDescription = "Expandir menú",
+                    contentDescription = stringResource(R.string.expand_menu),
                     tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
@@ -1575,7 +1575,7 @@ private fun LibraryTabSwitcherSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Library tabs",
+                text = stringResource(R.string.reorder_tabs),
                 style = MaterialTheme.typography.headlineSmall,
                 fontFamily = GoogleSansRounded
             )
@@ -1624,7 +1624,7 @@ private fun LibraryTabSwitcherSheet(
                                 contentDescription = null
                             )
                             Spacer(modifier = Modifier.width(10.dp))
-                            Text("Reorder tabs")
+                            Text(stringResource(R.string.reorder_tabs))
                         }
                     }
                 }
@@ -2655,7 +2655,7 @@ fun LibraryAlbumsTab(
                             contentPadding = PaddingValues(bottom = bottomBarHeight + MiniPlayerHeight + ListExtraBottomGap + 4.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            items(albums, key = { it.id }) { album ->
+                            items(albums, key = { it.id }, contentType = { "album" }) { album ->
                                 val albumSpecificColorSchemeFlow =
                                     playerViewModel.themeStateHolder.getAlbumColorSchemeFlow(album.albumArtUriString ?: "")
                                 val rememberedOnClick = remember(album.id) { { onAlbumClick(album.id) } }
@@ -2699,7 +2699,7 @@ fun LibraryAlbumsTab(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
 
-                            items(albums, key = { it.id }) { album ->
+                            items(albums, key = { it.id }, contentType = { "album" }) { album ->
                                 val albumSpecificColorSchemeFlow =
                                     playerViewModel.themeStateHolder.getAlbumColorSchemeFlow(album.albumArtUriString ?: "")
                                 val rememberedOnClick = remember(album.id) { { onAlbumClick(album.id) } }
@@ -2966,7 +2966,7 @@ fun LibraryArtistsTab(
 //                        item(key = "artists_top_spacer") {
 //                            Spacer(Modifier.height(4.dp))
 //                        }
-                        items(artists, key = { it.id }) { artist ->
+                        items(artists, key = { it.id }, contentType = { "artist" }) { artist ->
                             val rememberedOnClick = remember(artist) { { onArtistClick(artist.id) } }
                             ArtistListItem(artist = artist, onClick = rememberedOnClick)
                         }
@@ -3051,7 +3051,7 @@ fun ArtistListItem(artist: Artist, onClick: () -> Unit, isLoading: Boolean = fal
                     } else {
                         Icon(
                             painter = painterResource(R.drawable.rounded_artist_24),
-                            contentDescription = "Artista",
+                            contentDescription = stringResource(R.string.unknown_artist),
                             modifier = Modifier.padding(8.dp),
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )

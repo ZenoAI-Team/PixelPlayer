@@ -40,12 +40,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.size.Size
+import com.theveloper.pixelplay.R
 import com.theveloper.pixelplay.data.model.Song
 import com.theveloper.pixelplay.presentation.components.AutoScrollingTextOnDemand
 import com.theveloper.pixelplay.presentation.components.ShimmerBox
@@ -176,6 +180,7 @@ fun EnhancedSongListItem(
         label = "borderColorAnimation"
     )
 
+    val haptic = LocalHapticFeedback.current
     val mvContainerColor = if ((isCurrentSong) && !isLoading) colors.primaryContainer else colors.onSurface
     val mvContentColor = if ((isCurrentSong) && !isLoading) colors.onPrimaryContainer else colors.surfaceContainerHigh
 
@@ -262,6 +267,7 @@ fun EnhancedSongListItem(
                         onTap = { 
                             if (isSelectionMode) {
                                 // In selection mode, tap toggles selection
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 onLongPress()
                             } else {
                                 onClick() 
@@ -269,6 +275,7 @@ fun EnhancedSongListItem(
                         },
                         onLongPress = { 
                             // Long press always activates/toggles selection
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             onLongPress()
                         },
                         onPress = {
@@ -397,7 +404,7 @@ fun EnhancedSongListItem(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.MoreVert,
-                            contentDescription = "More options for ${song.title}",
+                            contentDescription = stringResource(R.string.more_options),
                             modifier = Modifier.size(24.dp)
                         )
                     }

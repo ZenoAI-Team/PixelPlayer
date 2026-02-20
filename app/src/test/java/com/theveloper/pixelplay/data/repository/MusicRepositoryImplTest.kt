@@ -40,6 +40,8 @@ class MusicRepositoryImplTest {
     private val mockTelegramRepository: com.theveloper.pixelplay.data.telegram.TelegramRepository = mockk(relaxed = true)
     private val mockSongRepository: SongRepository = mockk(relaxed = true)
     private val mockFavoritesDao: FavoritesDao = mockk(relaxed = true)
+    private val mockEngagementDao: com.theveloper.pixelplay.data.database.EngagementDao = mockk(relaxed = true)
+    private val mockWaveformDao: com.theveloper.pixelplay.data.database.WaveformDao = mockk(relaxed = true)
     private val mockArtistImageRepository: ArtistImageRepository = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
@@ -104,6 +106,8 @@ class MusicRepositoryImplTest {
             songRepository = mockSongRepository,
 
             favoritesDao = mockFavoritesDao,
+            engagementDao = mockEngagementDao,
+            waveformDao = mockWaveformDao,
             artistImageRepository = mockArtistImageRepository,
             folderTreeBuilder = mockk(relaxed = true)
         )

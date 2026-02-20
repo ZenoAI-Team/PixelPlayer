@@ -39,6 +39,7 @@ import kotlin.coroutines.resume
 
 import com.theveloper.pixelplay.data.netease.NeteaseStreamProxy
 import com.theveloper.pixelplay.data.telegram.TelegramRepository
+import com.theveloper.pixelplay.utils.MediaItemBuilder
 import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DataSpec
@@ -69,6 +70,9 @@ class DualPlayerEngine @Inject constructor(
 
     private lateinit var playerA: ExoPlayer
     private lateinit var playerB: ExoPlayer
+
+    private var titanProcessorA = TitanAudioProcessor()
+    private var titanProcessorB = TitanAudioProcessor()
 
     private val onPlayerSwappedListeners = mutableListOf<(Player) -> Unit>()
     
@@ -108,6 +112,23 @@ class DualPlayerEngine @Inject constructor(
     }
 
     // Listener to attach to the active master player (playerA)
+    private var replayGainMode: Int = 0 // 0: Off, 1: Track, 2: Album
+
+    fun updateReplayGainMode(mode: Int) {
+        replayGainMode = mode
+        updateReplayGain(playerA.currentMediaItem, titanProcessorA)
+    }
+
+    fun getTitanProcessorA() = titanProcessorA
+    fun getTitanProcessorB() = titanProcessorB
+
+    /**
+     * Returns the combined peak amplitude from both processors.
+     */
+    fun getPeakAmplitude(): Float {
+        return maxOf(titanProcessorA.getPeakAmplitude(), titanProcessorB.getPeakAmplitude())
+    }
+
     private val masterPlayerListener = object : Player.Listener {
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
             if (playWhenReady) {
@@ -128,6 +149,7 @@ class DualPlayerEngine @Inject constructor(
         }
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            updateReplayGain(mediaItem, titanProcessorA)
             // Integración de feature/telegram-cloud-sync
             val uri = mediaItem?.localConfiguration?.uri
             if (uri?.scheme == "telegram") {
@@ -145,16 +167,20 @@ class DualPlayerEngine @Inject constructor(
                 (playerA as? ExoPlayer)?.setWakeMode(C.WAKE_MODE_LOCAL)
             }
 
-            // --- Pre-Resolve Next/Prev Tracks para Performance ---
+            // --- Pre-Resolve & Pre-Buffer Next Tracks para Performance ---
             try {
                 val currentIndex = playerA.currentMediaItemIndex
                 if (currentIndex != C.INDEX_UNSET) {
-                    // 1. Pre-resolver SIGUIENTE
+                    // 1. Pre-resolver y Pre-cargar SIGUIENTE
                     if (currentIndex + 1 < playerA.mediaItemCount) {
                         val nextItem = playerA.getMediaItemAt(currentIndex + 1)
                         val nextUri = nextItem.localConfiguration?.uri
                         if (nextUri?.scheme == "telegram") {
                             telegramRepository.preResolveTelegramUri(nextUri.toString())
+                        }
+                        // Pre-buffering en Player B para transición instantánea
+                        if (!transitionRunning) {
+                            prepareNext(nextItem)
                         }
                     }
                     // 2. Pre-resolver ANTERIOR (para rapidez al retroceder)
@@ -215,8 +241,8 @@ class DualPlayerEngine @Inject constructor(
 
         // We initialize BOTH players with NO internal focus handling.
         // We manage Audio Focus manually via AudioFocusManager.
-        playerA = buildPlayer(handleAudioFocus = false)
-        playerB = buildPlayer(handleAudioFocus = false)
+        playerA = buildPlayer(handleAudioFocus = false, titanProcessorA)
+        playerB = buildPlayer(handleAudioFocus = false, titanProcessorB)
 
         // Attach listener to initial master
         playerA.addListener(masterPlayerListener)
@@ -256,8 +282,19 @@ class DualPlayerEngine @Inject constructor(
         }
     }
 
-    private fun buildPlayer(handleAudioFocus: Boolean): ExoPlayer {
+    private fun buildPlayer(handleAudioFocus: Boolean, titanProcessor: TitanAudioProcessor): ExoPlayer {
         val renderersFactory = object : DefaultRenderersFactory(context) {
+            override fun buildAudioSink(
+                context: Context,
+                enableFloatOutput: Boolean,
+                enableAudioTrackPlaybackParams: Boolean
+            ): AudioSink {
+                return androidx.media3.exoplayer.audio.DefaultAudioSink.Builder(context)
+                    .setAudioProcessors(arrayOf(titanProcessor))
+                    .setEnableFloatOutput(true) // Titan Engine: Enable 32-bit Float path
+                    .build()
+            }
+
             override fun buildAudioRenderers(
                 context: Context,
                 extensionRendererMode: Int,
@@ -268,23 +305,14 @@ class DualPlayerEngine @Inject constructor(
                 eventListener: AudioRendererEventListener,
                 out: ArrayList<Renderer>
             ) {
-                // Use provided sink or create one with Float output enabled
-                // Note: We use the provided audioSink if it works, but here we want to enforce config.
-                // Since super.buildAudioRenderers takes the sink, we can just pass our configured one.
-                // But wait, the parameter 'audioSink' is passed IN. 
-                // We should probably ignore the passed one if we want to enforce ours, OR configure ours and pass it to super.
-                
-                val sink = androidx.media3.exoplayer.audio.DefaultAudioSink.Builder(context)
-                    .setEnableFloatOutput(false) // Disable Float output to fix CCodec/Hardware errors on some devices
-                    .build()
-
+                // Add Titan's Optimized High-Res Audio Renderer
                 out.add(object : MediaCodecAudioRenderer(
                     context,
                     mediaCodecSelector,
                     enableDecoderFallback,
                     eventHandler,
                     eventListener,
-                    sink
+                    audioSink
                 ) {
                     override fun getCodecMaxInputSize(
                         codecInfo: MediaCodecInfo,
@@ -296,9 +324,29 @@ class DualPlayerEngine @Inject constructor(
                     }
                 })
 
-                super.buildAudioRenderers(context, extensionRendererMode, mediaCodecSelector, enableDecoderFallback, sink, eventHandler, eventListener, out)
+                // Add extension renderers (like FFmpeg) manually to avoid duplicate MediaCodecAudioRenderer from super
+                if (extensionRendererMode == EXTENSION_RENDERER_MODE_OFF) return
+
+                var extensionRendererIndex = out.size
+                if (extensionRendererMode == EXTENSION_RENDERER_MODE_PREFER) {
+                    extensionRendererIndex--
+                }
+
+                try {
+                    val clazz = Class.forName("androidx.media3.exoplayer.ffmpeg.FfmpegAudioRenderer")
+                    val constructor = clazz.getConstructor(
+                        Handler::class.java,
+                        AudioRendererEventListener::class.java,
+                        AudioSink::class.java
+                    )
+                    val renderer = constructor.newInstance(eventHandler, eventListener, audioSink) as Renderer
+                    out.add(extensionRendererIndex++, renderer)
+                    Timber.i("Titan Engine: Loaded FfmpegAudioRenderer.")
+                } catch (e: Exception) {
+                    // FFmpeg not available or other issue
+                }
             }
-        }.setEnableAudioFloatOutput(false) // Disable Float output helper
+        }.setEnableAudioFloatOutput(true) // Enable Float output helper
          .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
 
         val audioAttributes = AudioAttributes.Builder()
@@ -401,15 +449,16 @@ class DualPlayerEngine @Inject constructor(
         val dataSourceFactory = DefaultDataSource.Factory(context)
         val resolvingFactory = ResolvingDataSource.Factory(dataSourceFactory, resolver)
 
-        // Tune LoadControl to prevent "loop of death" (underrun -> start -> underrun)
-        // Increase bufferForPlaybackMs to wait for more data before starting/resuming.
+        // Titan-Elite: Hyper-Optimized LoadControl for Instant-Action
+        // Reduced buffer for playback start to 500ms for zero-latency response.
         val loadControl = androidx.media3.exoplayer.DefaultLoadControl.Builder()
             .setBufferDurationsMs(
-                30_000, // Min buffer 30s
-                60_000, // Max buffer 60s
-                5_000,  // Buffer for playback start (Increased from 2.5s for stability)
-                5_000   // Buffer for rebuffer (Increased to 5s to stop rapid cycling)
+                32_000, // Min buffer 32s
+                64_000, // Max buffer 64s
+                500,    // Instant Start: 500ms (Reduced from 5s)
+                1_000   // Fast Rebuffer: 1s (Reduced from 5s)
             )
+            .setBackBuffer(10_000, true) // Keep 10s of back buffer for instant seeking backwards
             .build()
 
         return ExoPlayer.Builder(context, renderersFactory)
@@ -438,6 +487,7 @@ class DualPlayerEngine @Inject constructor(
     fun prepareNext(mediaItem: MediaItem, startPositionMs: Long = 0L) {
         try {
             Timber.tag("TransitionDebug").d("Engine: prepareNext called for %s", mediaItem.mediaId)
+            updateReplayGain(mediaItem, titanProcessorB)
             playerB.stop()
             playerB.clearMediaItems()
             playerB.playWhenReady = false
@@ -605,6 +655,10 @@ class DualPlayerEngine @Inject constructor(
         playerA = incomingPlayer
         playerB = outgoingPlayer
         
+        val tempProcessor = titanProcessorA
+        titanProcessorA = titanProcessorB
+        titanProcessorB = tempProcessor
+
         // Critical: Reset pauseAtEndOfMediaItems on both players after swap.
         // The outgoing player (now B) had pauseAtEndOfMediaItems=true set before the transition started.
         // If we don't disable it, the outgoing player will pause itself when it reaches the end,
@@ -682,7 +736,7 @@ class DualPlayerEngine @Inject constructor(
 
         // Fresh Player Strategy: Release and recreate playerB to avoid OEM "stale session" tracking
         playerB.release()
-        playerB = buildPlayer(handleAudioFocus = false)
+        playerB = buildPlayer(handleAudioFocus = false, titanProcessorB)
         Timber.tag("TransitionDebug").d("Old Player (B) released and recreated fresh.")
 
         // Ensure New Player (A) is fully active and unrestricted
@@ -755,9 +809,25 @@ class DualPlayerEngine @Inject constructor(
         } ?: false
     }
 
-    /**
-     * Cleans up resources when the engine is no longer needed.
-     */
+    private fun updateReplayGain(mediaItem: MediaItem?, processor: TitanAudioProcessor) {
+        val extras = mediaItem?.mediaMetadata?.extras
+        if (extras == null) {
+            processor.setReplayGain(0.0f)
+            return
+        }
+        val trackGain = extras.getDouble(MediaItemBuilder.EXTERNAL_EXTRA_TRACK_GAIN, 0.0)
+        val albumGain = extras.getDouble(MediaItemBuilder.EXTERNAL_EXTRA_ALBUM_GAIN, 0.0)
+
+        val gain = when (replayGainMode) {
+            1 -> trackGain
+            2 -> if (albumGain != 0.0) albumGain else trackGain
+            else -> 0.0
+        }
+
+        processor.setReplayGain(gain.toFloat())
+        Timber.tag("TitanEngine").d("ReplayGain applied: %.2f dB (Mode: %d) to processor %s", gain, replayGainMode, processor)
+    }
+
     fun release() {
         transitionJob?.cancel()
         abandonAudioFocus()

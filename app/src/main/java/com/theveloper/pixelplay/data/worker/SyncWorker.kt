@@ -31,6 +31,7 @@ import com.theveloper.pixelplay.utils.AudioMetaUtils.getAudioMetadata
 import com.theveloper.pixelplay.utils.DirectoryRuleResolver
 import com.theveloper.pixelplay.utils.normalizeMetadataTextOrEmpty
 import com.theveloper.pixelplay.utils.splitArtistsByDelimiters
+import linc.com.amplituda.Amplituda
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.io.File
@@ -66,7 +67,8 @@ constructor(
         private val userPreferencesRepository: UserPreferencesRepository,
         private val lyricsRepository: LyricsRepository,
         private val telegramDao: TelegramDao,
-        private val neteaseDao: NeteaseDao
+        private val neteaseDao: NeteaseDao,
+        private val waveformDao: com.theveloper.pixelplay.data.database.WaveformDao
 ) : CoroutineWorker(appContext, workerParams) {
 
     private val contentResolver: ContentResolver = appContext.contentResolver
@@ -392,6 +394,9 @@ constructor(
                         // Sync cloud songs (Telegram + Netease)
                         syncTelegramData()
                         syncNeteaseData()
+
+                        // --- WAVEFORM GENERATION PHASE ---
+                        generateWaveforms(correctedSongs)
 
                         // Recalculate total after cloud sync
                         val finalTotalSongs = musicDao.getSongCount().first()
@@ -790,7 +795,8 @@ constructor(
             val duration: Long,
             val trackNumber: Int,
             val year: Int,
-            val dateModified: Long
+            val dateModified: Long,
+            val trackGain: Double? = null
     )
 
     private fun isSongUnchanged(raw: RawSongData, existing: SongEntity?): Boolean {
@@ -931,7 +937,8 @@ constructor(
                                         duration = cursor.getLong(durationCol),
                                         trackNumber = cursor.getInt(trackCol),
                                         year = cursor.getInt(yearCol),
-                                        dateModified = cursor.getLong(dateAddedCol)
+                                        dateModified = cursor.getLong(dateAddedCol),
+                                        trackGain = existingSongsById[songId]?.trackGain
                                 )
                         )
                     }
@@ -1043,9 +1050,14 @@ constructor(
         var trackNumber = raw.trackNumber
         var year = raw.year
         var genre: String? = genreMap[raw.id] // Use mapped genre as default
+        var trackGain: Double? = null
+        var trackPeak: Double? = null
+        var albumGain: Double? = null
+        var albumPeak: Double? = null
 
         val shouldAugmentMetadata =
                 deepScan ||
+                        raw.trackGain == null || // Titan Engine: Force scan for ReplayGain if missing
                         raw.filePath.endsWith(".wav", true) ||
                         raw.filePath.endsWith(".opus", true) ||
                         raw.filePath.endsWith(".ogg", true) ||
@@ -1069,6 +1081,10 @@ constructor(
                         if (!meta.genre.isNullOrBlank()) genre = meta.genre
                         if (meta.trackNumber != null) trackNumber = meta.trackNumber
                         if (meta.year != null) year = meta.year
+                        trackGain = meta.trackGain
+                        trackPeak = meta.trackPeak
+                        albumGain = meta.albumGain
+                        albumPeak = meta.albumPeak
 
                         meta.artwork?.let { art ->
                             val uri =
@@ -1109,7 +1125,11 @@ constructor(
                         },
                 mimeType = audioMetadata?.mimeType ?: raw.mimeType,
                 sampleRate = audioMetadata?.sampleRate,
-                bitrate = audioMetadata?.bitrate
+                bitrate = audioMetadata?.bitrate,
+                trackGain = trackGain ?: audioMetadata?.trackGain,
+                trackPeak = trackPeak ?: audioMetadata?.trackPeak,
+                albumGain = albumGain ?: audioMetadata?.albumGain,
+                albumPeak = albumPeak ?: audioMetadata?.albumPeak
         )
     }
 
@@ -1520,7 +1540,11 @@ constructor(
                     bitrate = 0,
                     sampleRate = 0,
                     telegramChatId = tSong.chatId,
-                    telegramFileId = tSong.fileId
+                    telegramFileId = tSong.fileId,
+                    trackGain = null,
+                    trackPeak = null,
+                    albumGain = null,
+                    albumPeak = null
                 )
                 songsToInsert.add(songEntity)
             }
@@ -1682,5 +1706,46 @@ constructor(
 
     private fun toUnifiedNeteaseArtistId(artistName: String): Long {
         return -(NETEASE_ARTIST_ID_OFFSET + artistName.lowercase().hashCode().toLong().absoluteValue)
+    }
+
+    private suspend fun generateWaveforms(songs: List<SongEntity>) {
+        if (songs.isEmpty()) return
+
+        Log.i(TAG, "Starting waveform generation for ${songs.size} songs...")
+        val amplituda = linc.com.amplituda.Amplituda(applicationContext)
+        val processedCount = AtomicInteger(0)
+        val total = songs.size
+
+        songs.forEach { song ->
+            if (song.filePath.isNotEmpty() && File(song.filePath).exists()) {
+                try {
+                    // Check if already cached
+                    if (waveformDao.getWaveformBySongId(song.id) == null) {
+                        val result = amplituda.processAudio(File(song.filePath)).get()
+                        val amplitudes = result.amplitudesAsList().map { it.toFloat() }.toFloatArray()
+
+                        waveformDao.insertWaveform(
+                            com.theveloper.pixelplay.data.database.WaveformEntity(
+                                songId = song.id,
+                                amplitudes = amplitudes
+                            )
+                        )
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to generate waveform for ${song.title}: ${e.message}")
+                }
+            }
+            val current = processedCount.incrementAndGet()
+            if (current % 10 == 0 || current == total) {
+                setProgress(
+                    workDataOf(
+                        PROGRESS_CURRENT to current,
+                        PROGRESS_TOTAL to total,
+                        PROGRESS_PHASE to SyncProgress.SyncPhase.PROCESSING_FILES.ordinal // Reusing phase for simplicity
+                    )
+                )
+            }
+        }
+        Log.i(TAG, "Waveform generation completed.")
     }
 }

@@ -68,6 +68,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.ColorFilter
@@ -100,7 +101,6 @@ import coil.request.ImageRequest
 import coil.size.Size
 import com.theveloper.pixelplay.R
 import com.theveloper.pixelplay.data.github.GitHubContributorService
-import com.theveloper.pixelplay.presentation.components.CollapsibleCommonTopBar
 import com.theveloper.pixelplay.presentation.components.MiniPlayerHeight
 import com.theveloper.pixelplay.presentation.components.SmartImage
 import com.theveloper.pixelplay.presentation.components.brickbreaker.BrickBreakerOverlay
@@ -123,11 +123,21 @@ private data class Contributor(
     val contributions: Int? = null,
 )
 
-private val CoreMaintainer = Contributor(
+private val LeadArchitect = Contributor(
+    id = "voidx3d",
+    displayName = "VoidX3D",
+    role = "Lead Architect & Project Visionary",
+    detail = "Pioneering the Titan-Elite evolution: merging audiophile DSP with AI automation.",
+    avatarUrl = null,
+    iconRes = R.drawable.round_developer_board_24,
+    githubUrl = "https://github.com/voidx3d",
+)
+
+private val Creator = Contributor(
     id = "theovilardo",
     displayName = "Theo Vilardo",
-    role = "Creator and maintainer",
-    detail = "Building PixelPlayer with direct community feedback.",
+    role = "Creator and Original Maintainer",
+    detail = "The foundation of VoidPlayer was built here.",
     avatarUrl = "https://avatars.githubusercontent.com/u/26845343?v=4",
     iconRes = R.drawable.round_developer_board_24,
     githubUrl = "https://github.com/theovilardo",
@@ -157,7 +167,7 @@ private val PinnedCommunityMembers = listOf(
         id = "colbycabrera",
         displayName = "@ColbyCabrera",
         role = "Early contributor",
-        detail = "Helped shape PixelPlayer in the first stages of the app.",
+        detail = "Helped shape VoidPlayer in the first stages of the app.",
         badge = "Early Support",
         iconRes = R.drawable.round_newspaper_24,
         githubUrl = "https://github.com/ColbyCabrera",
@@ -172,7 +182,69 @@ private fun normalizeHandle(handle: String): String {
     return handle.trim().removePrefix("@").lowercase()
 }
 
-// AboutTopBar removed, replaced by CollapsibleCommonTopBar
+@Composable
+private fun AboutTopBar(
+    collapseFraction: Float,
+    headerHeight: Dp,
+    onBackPressed: () -> Unit,
+) {
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val titleScale = lerpFloat(1.2f, 0.85f, collapseFraction)
+    val titlePaddingStart = lerpDp(32.dp, 58.dp, collapseFraction)
+    val titleVerticalBias = lerpFloat(1f, -1f, collapseFraction)
+    val animatedTitleAlignment = BiasAlignment(horizontalBias = -1f, verticalBias = titleVerticalBias)
+    val titleContainerHeight = lerpDp(88.dp, 56.dp, collapseFraction)
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(headerHeight)
+            .background(surfaceColor.copy(alpha = collapseFraction)),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding(),
+        ) {
+            FilledIconButton(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 12.dp, top = 4.dp),
+                onClick = onBackPressed,
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                ),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.rounded_arrow_back_24),
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(animatedTitleAlignment)
+                    .height(titleContainerHeight)
+                    .fillMaxWidth()
+                    .padding(start = titlePaddingStart, end = 24.dp),
+            ) {
+                Text(
+                    text = "About",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .graphicsLayer {
+                            scaleX = titleScale
+                            scaleY = titleScale
+                        },
+                )
+            }
+        }
+    }
+}
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @Suppress("UNUSED_PARAMETER")
@@ -199,7 +271,10 @@ fun AboutScreen(
             val result = githubService.fetchContributors()
             result.onSuccess { githubContributors ->
                 contributors = githubContributors
-                    .filter { normalizeHandle(it.login) != CoreMaintainer.id }
+                    .filter { handle ->
+                        val normalized = normalizeHandle(handle.login)
+                        normalized != LeadArchitect.id && normalized != Creator.id
+                    }
                     .map { github ->
                         Contributor(
                             id = normalizeHandle(github.login),
@@ -246,7 +321,8 @@ fun AboutScreen(
 
     val excludedIds = remember(spotlightContributors) {
         buildSet {
-            add(CoreMaintainer.id)
+            add(LeadArchitect.id)
+            add(Creator.id)
             spotlightContributors.forEach { spotlight ->
                 add(spotlight.id)
                 addAll(PinnedAliases[spotlight.id].orEmpty())
@@ -357,7 +433,7 @@ fun AboutScreen(
         LazyColumn(
             state = lazyListState,
             contentPadding = PaddingValues(
-                top = currentTopBarHeightDp + 8.dp,
+                top = currentTopBarHeightDp,
                 bottom = MiniPlayerHeight +
                     WindowInsets.navigationBars
                         .asPaddingValues()
@@ -377,23 +453,84 @@ fun AboutScreen(
                 )
             }
 
+            item(key = "titan_engine_title") {
+                AboutSectionHeader(
+                    title = "Titan DSP Engine",
+                    subtitle = "Audiophile-grade 32-bit precision processing.",
+                    modifier = Modifier.padding(top = 24.dp),
+                )
+            }
+            item(key = "titan_engine_detail") {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = expressiveListShape(index = 0, count = 1),
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                ) {
+                    Text(
+                        text = "Features a 32-band parametric equalizer, bit-perfect output, and pro-level gain management for the ultimate listening experience.",
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            item(key = "void_intelligence_title") {
+                AboutSectionHeader(
+                    title = "Void-Intelligence",
+                    subtitle = "Gemini 2.0 AI-augmented automation.",
+                    modifier = Modifier.padding(top = 24.dp),
+                )
+            }
+            item(key = "void_intelligence_detail") {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = expressiveListShape(index = 0, count = 1),
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                ) {
+                    Text(
+                        text = "Intelligent playlist generation, mood classification, and smart metadata normalization powered by Gemini 2.0.",
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
             item(key = "maintainer_title") {
                 AboutSectionHeader(
-                    title = "Maintainer",
-                    subtitle = "The person behind PixelPlayer.",
+                    title = "Project Leadership",
+                    subtitle = "The visionaries behind the Titan-Elite edition.",
                     modifier = Modifier.padding(top = 24.dp),
                 )
             }
 
-            item(key = "maintainer_card") {
+            item(key = "lead_architect_card") {
                 ContributorCard(
-                    contributor = CoreMaintainer,
-                    shape = expressiveListShape(index = 0, count = 1),
+                    contributor = LeadArchitect,
+                    shape = expressiveListShape(index = 0, count = 2),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
                     showContributionCount = false,
-                    onCardClick = CoreMaintainer.githubUrl?.let { url -> { openUrl(context, url) } },
+                    onCardClick = LeadArchitect.githubUrl?.let { url -> { openUrl(context, url) } },
+                )
+            }
+
+            item(key = "creator_card") {
+                ContributorCard(
+                    contributor = Creator,
+                    shape = expressiveListShape(index = 1, count = 2),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 3.dp),
+                    showContributionCount = false,
+                    onCardClick = Creator.githubUrl?.let { url -> { openUrl(context, url) } },
                 )
             }
 
@@ -481,13 +618,10 @@ fun AboutScreen(
             }
         }
 
-        CollapsibleCommonTopBar(
-            title = "About",
+        AboutTopBar(
             collapseFraction = collapseFraction,
             headerHeight = currentTopBarHeightDp,
-            onBackClick = onNavigationIconClick,
-            expandedTitleStartPadding = 20.dp,
-            collapsedTitleStartPadding = 68.dp
+            onBackPressed = onNavigationIconClick,
         )
 
         if (showBrickBreaker) {
@@ -557,14 +691,15 @@ private fun AboutHeroCard(
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
                         Text(
-                            text = "PixelPlayer",
+                            text = "VoidPlayer: Titan-Elite",
                             style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Black,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
+                            color = Color(0xFF00E5FF) // Cyan Neon
                         )
                         Text(
-                            text = "Open source music player built with its community.",
+                            text = "The definitive high-fidelity, AI-augmented music ecosystem.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 2,
@@ -589,7 +724,7 @@ private fun AboutHeroCard(
                         },
                 ) {
                     Text(
-                        text = "Version v$versionName",
+                        text = "Version v1.0 (Titan-Elite)",
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onTertiaryContainer,
